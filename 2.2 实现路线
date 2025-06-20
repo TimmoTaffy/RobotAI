@@ -1,0 +1,41 @@
+按优先级和依赖关系分成 6 个阶段：
+
+1. 数据结构
+
+在 world_model.py 定义核心数据类型（Python dataclass）：
+自车状态、目标列表、障碍列表、任务点、雷达站机器人信息等
+
+2. 串口接收与传感器模块
+
+实现串口接收模块（serial_receiver.py），接收主控发送的 JSON 数据
+实现各传感器模块（imu.py、wheel_encoder.py、lidar.py、radar_station.py、vision.py），从串口接收数据并解析
+实现坐标变换脚本（transforms/*），把相机、激光、车体数据统一投到世界坐标系
+
+3. 自车状态估计（A 子线）
+
+完成 Dead Reckoning（dead_reckoning.py），用轮速推算基本里程计
+加入 IMU 标定模块（imu_calibration.py），校准零偏
+搭建 EKF 框架（ekf_fusion.py），先实现 predict，再实现 wheel/IMU update
+
+4. 地图构建与障碍检测（B 子线）
+
+接入 Livox 点云（lidar_processor.py），实现地面滤波 + 聚类障碍
+生成占据栅格或障碍列表（occupancy_grid.py）
+提供统一的 MapBuilder 接口（map_builder.py）
+
+5. 雷达站目标识别与跟踪
+
+实现雷达站单位的机器人识别（radar_station.py），提取敌我机器人信息（颜色、ID、血量等）
+实现多传感器目标融合跟踪（target_tracker.py），维护位置/速度/置信度
+
+6. 目标可视化与联调
+
+编写可视化模块（visualization.py），实时绘制自车、目标、障碍和任务点
+集成测试：每帧输出 world_model，在可视化界面验证时序和一致性
+
+7. 完成以上六大步后，就进入端到端联调和性能优化阶段：
+
+时间同步验证（利用 PTPv2）
+滤波器和 EKF 参数调优
+多线程或 ROS/异步框架集成
+单元测试、仿真验证与实车测试。

@@ -1,0 +1,32 @@
+RobotAI/
+├── sensors/                   # 统一管理所有传感器输入，主控接收后传给开发板
+│   ├── serial_receiver.py     # 接收主控发来的 USB 串口 JSON 数据
+│   ├── imu.py                 # 从 serial_receiver 获取 IMU 数据
+│   ├── wheel_encoder.py       # 从 serial_receiver 获取电调反馈数据
+│   ├── lidar.py               # 从 serial_receiver 获取车载激光雷达点云数据
+│   ├── radar_station.py       # 从 serial_receiver 获取雷达站单位数据
+│   ├── vision.py              # 从 serial_receiver 获取视觉识别结果
+│   └── magnetometer.py        # 从 serial_receiver 获取磁力计数据
+│
+├── transforms/                # 坐标变换：所有数据源先变换到车体坐标，再到世界坐标
+│   ├── camera_to_vehicle.py   # 相机→车体
+│   ├── lidar_to_vehicle.py    # 雷达→车体
+│   └── vehicle_to_world.py    # 车体→世界
+│
+├── localization/              # 自车状态估计（A子线）实现 Dead Reckoning、IMU 标定和 EKF 融合，输出 (x,y,θ,v)
+│   ├── dead_reckoning.py      # 纯轮速推算
+│   ├── imu_calibration.py     # IMU 标定、补偿
+│   └── ekf_fusion.py          # EKF 融合：轮速 + yaw + acc
+│
+├── mapping/                   # 地图构建（B子线）接 Livox 点云，去地面→聚类→生成占据栅格或障碍列表
+│   ├── lidar_processor.py     # 点云滤地面、聚类
+│   ├── occupancy_grid.py      # 栅格地图生成
+│   └── map_builder.py         # 统一接口
+│
+├── tracking/                  # 敌人 & 动态障碍跟踪 接收来自 radar/vision/world_model 的目标，维护跟踪列表
+│   └── target_tracker.py      # 多源融合、置信度管理
+│
+├── world_model.py             # 统一的数据结构：自车、敌人、静/动障碍、任务点、雷达站机器人信息
+│
+└── viz/                       # 可视化。把 world_model 一帧一帧画出来，方便调试。
+    └── visualization.py       # matplotlib 实时更新
