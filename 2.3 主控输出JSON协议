@@ -50,6 +50,10 @@
   },
   "turret": {
     "pitch": 0.1,                // 云台俯仰角 (rad)
-    "yaw": 0.5                   // 云台偏航角 (rad)
+    "yaw": 0.5,                 // 云台偏航角 (rad)
+    "motor_angles": {
+      "horizontal": 45.0,       // 水平旋转电机角度 (deg)
+      "vertical": 10.0          // 低头抬头电机角度 (deg)
+    }
   }
 }

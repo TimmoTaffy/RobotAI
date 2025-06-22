@@ -19,7 +19,7 @@ RobotAI/
 │   ├── dead_reckoning.py      # 纯轮速推算
 │   ├── imu_calibration.py     # IMU 标定、补偿
 │   ├── ekf_fusion.py          # EKF 融合：轮速 + IMU + 磁力计 + 底盘陀螺仪
-│   └── turret_pose.py         # 云台姿态估计：根据陀螺仪和磁力计数据，解算俯仰角和偏航角，（pitch 和 yaw），更新到 world_model
+│   └── turret_pose.py         # 云台姿态估计：根据陀螺仪、磁力计和电机角度数据，解算俯仰角、偏航角和电机角度，更新到 world_model
 │
 ├── mapping/                   # 地图构建（B子线）接 Livox 点云，去地面→聚类→生成占据栅格或障碍列表
 │   ├── lidar_processor.py     # 点云滤地面、聚类
@@ -30,6 +30,6 @@ RobotAI/
 │   └── target_tracker.py      # 多源融合、置信度管理
 │
 ├── world_model.py             # 统一的数据结构：自车、敌人、静/动障碍、任务点、雷达站机器人信息
+│                              # 包括云台姿态（俯仰角、偏航角）和电机角度（水平、垂直）
 │
-└── viz/                       # 可视化。把 world_model 一帧一帧画出来，方便调试。
-    └── visualization.py       # matplotlib 实时更新
+└── 2.3 主控输出JSON协议       # 定义主控发送的 JSON 数据格式，包括新增的云台电机角度字段

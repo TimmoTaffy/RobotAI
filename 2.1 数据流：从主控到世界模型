@@ -33,14 +33,14 @@
   - LidarProcessor：处理激光雷达点云，提取障碍物
   - TargetTracker：融合雷达站和视觉数据，跟踪目标
   - TurretPose：估计云台姿态（俯仰角和偏航角）
-    - 从串口接收陀螺仪和磁力计数据
+    - 从串口接收陀螺仪、磁力计和电机角度数据
     - 调用 turret_pose.py 解算俯仰角和偏航角
-    - 输出云台姿态数据
+    - 输出云台姿态数据和电机角度
 
 5. 更新 WorldModel
 • 目的：将所有模块的输出统一填充到 `WorldModel` 对象中
 • 举例：
-  wm.self_pose = SelfPose(x, y, θ, v, turret_pitch=pitch, turret_yaw=yaw)
+  wm.self_pose = SelfPose(x, y, θ, v, turret_pitch=pitch, turret_yaw=yaw, horizontal_motor=horizontal_angle, vertical_motor=vertical_angle)
   wm.enemy_targets = [EnemyTarget(...), …]
   wm.static_obstacles = [...]
   wm.dynamic_obstacles = [...]

@@ -9,6 +9,8 @@ class SelfPose:
     velocity: float  # 线速度
     turret_pitch: float = 0.0  # 云台俯仰角
     turret_yaw: float = 0.0  # 云台偏航角
+    horizontal_motor: float = 0.0  # 水平旋转电机角度
+    vertical_motor: float = 0.0  # 低头抬头电机角度
 
 @dataclass
 class EnemyTarget:
