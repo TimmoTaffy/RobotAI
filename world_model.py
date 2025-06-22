@@ -7,6 +7,8 @@ class SelfPose:
     y: float
     theta: float  # 朝向角
     velocity: float  # 线速度
+    turret_pitch: float = 0.0  # 云台俯仰角
+    turret_yaw: float = 0.0  # 云台偏航角
 
 @dataclass
 class EnemyTarget:
@@ -43,7 +45,6 @@ class RobotInfo:
     x: float
     y: float
     color: str
-    hp: int  # 血量
 
 @dataclass
 class WorldModel:
@@ -52,4 +53,4 @@ class WorldModel:
     task_points: List[TaskPoint]
     static_obstacles: List[StaticObstacle]
     dynamic_obstacles: List[DynamicObstacle]
-    robots: List[RobotInfo]  # 新增：敌我机器人信息
+    robots: List[RobotInfo]  # 敌我机器人信息

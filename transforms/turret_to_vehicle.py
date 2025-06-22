@@ -1,19 +1,19 @@
 import numpy as np
 
-def transform_camera_to_vehicle(camera_position, camera_orientation, camera_to_vehicle_offset):
+def transform_turret_to_vehicle(turret_position, turret_orientation, turret_to_vehicle_offset):
     """
-    将相机坐标系下的位置和方向转换到车体坐标系。
-    :param camera_position: [x, y, z] 相机坐标系下的位置
-    :param camera_orientation: [roll, pitch, yaw] 相机的姿态
-    :param camera_to_vehicle_offset: [x, y, z] 相机相对于车体的固定偏移
+    将云台坐标系下的位置和方向转换到车体坐标系。
+    :param turret_position: [x, y, z] 云台坐标系下的位置
+    :param turret_orientation: [roll, pitch, yaw] 云台的姿态
+    :param turret_to_vehicle_offset: [x, y, z] 云台相对于车体的固定偏移
     :return: 车体坐标系下的位置和方向
     """
     # 计算旋转矩阵
-    roll, pitch, yaw = camera_orientation
+    roll, pitch, yaw = turret_orientation
     rotation_matrix = compute_rotation_matrix(roll, pitch, yaw)
 
     # 位置转换
-    vehicle_position = np.dot(rotation_matrix, camera_position) + camera_to_vehicle_offset
+    vehicle_position = np.dot(rotation_matrix, turret_position) + turret_to_vehicle_offset
 
     return vehicle_position
 

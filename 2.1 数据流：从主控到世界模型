@@ -3,12 +3,13 @@
 下面用一个端到端的流程图来说明“主控 → 串口接收 → 数据分发 → 模块处理 → world_model”各环节的职责和数据流：
 
 1. 主控发送数据
-• 目的：主控通过 USB 串口发送所有传感器数据（IMU、电调反馈、激光雷达、雷达站、视觉结果）
+• 目的：主控通过 USB 串口发送所有传感器数据（IMU、电调反馈、激光雷达、雷达站、视觉结果，以及云台姿态）
 • 输出：JSON 格式的结构化数据，例如：
   {
       "sensor": "IMU",
       "gyro": [0.1, 0.2, 0.3],
       "acc": [0.0, 0.0, -9.8],
+      "yaw": 1.57,
       "timestamp": 1234567.89
   }
 
@@ -17,31 +18,33 @@
 • 输出：带有时间戳的原始数据，推送到队列中
 
 3. 数据分发
-• 目的：各传感器模块（如 IMU、WheelEncoder、Lidar 等）从队列中提取自己关心的数据
+• 目的：各传感器模块（如 IMU、WheelEncoder、Lidar、Magnetometer、BaseGyro 等）从队列中提取自己关心的数据
 • 举例：
   - IMU 模块提取 "sensor": "IMU" 的数据
   - WheelEncoder 模块提取 "sensor": "WheelEncoder" 的数据
+  - Magnetometer 模块提取 "sensor": "Magnetometer" 的数据
 • 输出：模块内部用的原始测量数据
 
 4. 模块处理
 • 目的：各功能模块对数据进行处理和融合
 • 举例：
   - Dead Reckoning：根据轮速推算位姿
-  - EKF：融合 IMU 和轮速数据，估计自车状态
+  - EKF：融合 IMU、磁力计、底盘陀螺仪和轮速数据，估计自车状态
   - LidarProcessor：处理激光雷达点云，提取障碍物
   - TargetTracker：融合雷达站和视觉数据，跟踪目标
-• 输出：各模块的处理结果，例如：
-  - 自车当前估计位姿 (x, y, θ, v)
-  - 敌人目标列表 (x, y, 方向, 置信度)
-  - 障碍物坐标或栅格地图
+  - TurretPose：估计云台姿态（俯仰角和偏航角）
+    - 从串口接收陀螺仪和磁力计数据
+    - 调用 turret_pose.py 解算俯仰角和偏航角
+    - 输出云台姿态数据
 
 5. 更新 WorldModel
 • 目的：将所有模块的输出统一填充到 `WorldModel` 对象中
 • 举例：
-  wm.self_pose = SelfPose(x, y, θ, v)
+  wm.self_pose = SelfPose(x, y, θ, v, turret_pitch=pitch, turret_yaw=yaw)
   wm.enemy_targets = [EnemyTarget(...), …]
   wm.static_obstacles = [...]
   wm.dynamic_obstacles = [...]
+  wm.turret_pose = TurretPose(pitch, yaw)
 • 最终：一个包含全场态势的 `WorldModel`，供决策、路径规划和可视化使用
 
 ——————

@@ -26,16 +26,14 @@
         "team": "ally",          // 队伍："ally" 或 "enemy"
         "x": 1.2,                // 世界坐标系下的 x 坐标
         "y": 3.4,                // 世界坐标系下的 y 坐标
-        "color": "blue",         // 颜色
-        "hp": 100                // 血量
+        "color": "blue"          // 颜色
       },
       {
         "id": 2,
         "team": "enemy",
         "x": 5.6,
         "y": 7.8,
-        "color": "red",
-        "hp": 80
+        "color": "red"
       }
     ]
   },
@@ -49,5 +47,9 @@
         "confidence": 0.95       // 置信度
       }
     ]
+  },
+  "turret": {
+    "pitch": 0.1,                // 云台俯仰角 (rad)
+    "yaw": 0.5                   // 云台偏航角 (rad)
   }
 }

@@ -1,21 +1,21 @@
-按优先级和依赖关系分成 6 个阶段：
+按优先级和依赖关系分成 7 个阶段：
 
 1. 数据结构
 
 在 world_model.py 定义核心数据类型（Python dataclass）：
-自车状态、目标列表、障碍列表、任务点、雷达站机器人信息等
+自车状态、目标列表、障碍列表、任务点、雷达站机器人信息、云台姿态等
 
 2. 串口接收与传感器模块
 
 实现串口接收模块（serial_receiver.py），接收主控发送的 JSON 数据
-实现各传感器模块（imu.py、wheel_encoder.py、lidar.py、radar_station.py、vision.py），从串口接收数据并解析
+实现各传感器模块（imu.py、wheel_encoder.py、lidar.py、radar_station.py、vision.py、magnetometer.py、base_gyro.py），从串口接收数据并解析
 实现坐标变换脚本（transforms/*），把相机、激光、车体数据统一投到世界坐标系
 
 3. 自车状态估计（A 子线）
 
 完成 Dead Reckoning（dead_reckoning.py），用轮速推算基本里程计
 加入 IMU 标定模块（imu_calibration.py），校准零偏
-搭建 EKF 框架（ekf_fusion.py），先实现 predict，再实现 wheel/IMU update
+搭建 EKF 框架（ekf_fusion.py），融合轮速、IMU、磁力计和底盘陀螺仪数据，估计自车状态
 
 4. 地图构建与障碍检测（B 子线）
 
@@ -28,12 +28,20 @@
 实现雷达站单位的机器人识别（radar_station.py），提取敌我机器人信息（颜色、ID、血量等）
 实现多传感器目标融合跟踪（target_tracker.py），维护位置/速度/置信度
 
-6. 目标可视化与联调
+6. 云台姿态估计
+
+实现云台姿态估计模块（turret_pose.py），结合主控板 IMU 和磁力计数据，估计俯仰角和偏航角。
+具体步骤：
+- 在 serial_receiver.py 中解析云台传感器数据（陀螺仪和磁力计）。
+- 在 turret_pose.py 中实现姿态解算逻辑，输出俯仰角和偏航角。
+- 更新 world_model.py，将云台姿态（pitch 和 yaw）填充到 SelfPose 数据类中。
+
+7. 目标可视化与联调
 
 编写可视化模块（visualization.py），实时绘制自车、目标、障碍和任务点
 集成测试：每帧输出 world_model，在可视化界面验证时序和一致性
 
-7. 完成以上六大步后，就进入端到端联调和性能优化阶段：
+8. 完成以上七大步后，就进入端到端联调和性能优化阶段：
 
 时间同步验证（利用 PTPv2）
 滤波器和 EKF 参数调优
