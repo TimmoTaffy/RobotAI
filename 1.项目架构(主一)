@@ -4,7 +4,7 @@ RobotAI/
 │   ├── imu.py                 # 从 serial_receiver 获取主控板上的 IMU（BMI088）数据
 │   ├── magnetometer.py        # 从 serial_receiver 获取主控板上的磁力计（IST8310）数据
 │   ├── wheel_encoder.py       # 从 serial_receiver 获取电调反馈数据（各轮角速度）
-│   ├── lidar.py               # 从 serial_receiver 获取底盘雷达点云数据
+│   ├── lidar.py               # 从 serial_receiver 获取底盘雷达点云数据，同时支持反射率和标记信息
 │   ├── base_gyro.py           # 从 serial_receiver 获取底盘上的陀螺仪数据
 │   ├── radar_station.py       # 从 serial_receiver 获取雷达站发送的单位位置
 │   └── vision.py              # 从 serial_receiver 获取视觉识别结果
@@ -22,7 +22,7 @@ RobotAI/
 │   └── turret_pose.py         # 云台姿态估计：根据陀螺仪、磁力计和电机角度数据，解算俯仰角、偏航角和电机角度，更新到 world_model
 │
 ├── mapping/                   # 地图构建（B子线）接 Livox 点云，去地面→聚类→生成占据栅格或障碍列表
-│   ├── lidar_processor.py     # 点云滤地面、聚类
+│   ├── lidar_processor.py     # 点云滤地面、聚类，支持基于标记信息过滤
 │   ├── occupancy_grid.py      # 栅格地图生成
 │   └── map_builder.py         # 统一接口
 │

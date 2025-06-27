@@ -19,7 +19,7 @@
 
 4. 地图构建与障碍检测（B 子线）
 
-接入 Livox 点云（lidar_processor.py），实现地面滤波 + 聚类障碍
+接入 Unitree4D 点云（lidar_processor.py），实现反射率过滤 + 聚类障碍
 生成占据栅格或障碍列表（occupancy_grid.py）
 提供统一的 MapBuilder 接口（map_builder.py）
 
