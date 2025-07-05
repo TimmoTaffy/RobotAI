@@ -17,8 +17,7 @@
       [1.0, 2.0, 0.0],
       [1.5, 2.5, 0.1],
       [2.0, 3.0, 0.2]
-    ],
-    "reflectivity": [150, 200, 255] // 目标反射率
+    ]
   },
   "radar_station": {
     "robots": [                  // 雷达站识别的机器人信息
@@ -27,14 +26,16 @@
         "team": "ally",          // 队伍："ally" 或 "enemy"
         "x": 1.2,                // 世界坐标系下的 x 坐标
         "y": 3.4,                // 世界坐标系下的 y 坐标
-        "color": "blue"          // 颜色
+        "color": "blue",         // 颜色
+        "hp": 100                // 血量
       },
       {
         "id": 2,
         "team": "enemy",
         "x": 5.6,
         "y": 7.8,
-        "color": "red"
+        "color": "red",
+        "hp": 80
       }
     ]
   },
@@ -48,13 +49,5 @@
         "confidence": 0.95       // 置信度
       }
     ]
-  },
-  "turret": {
-    "pitch": 0.1,                // 云台俯仰角 (rad)
-    "yaw": 0.5,                 // 云台偏航角 (rad)
-    "motor_angles": {
-      "horizontal": 45.0,       // 水平旋转电机角度 (deg)
-      "vertical": 10.0          // 低头抬头电机角度 (deg)
-    }
   }
 }

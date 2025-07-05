@@ -1,58 +1,21 @@
+"""
+世界模型定义，使用 common/types 中的标准数据类型，避免重复定义
+"""
 from dataclasses import dataclass
 from typing import List
+from common.types import Pose2D, TurretState, RobotInfo
 
-@dataclass
-class SelfPose:
-    x: float
-    y: float
-    theta: float  # 朝向角
-    velocity: float  # 线速度
-    turret_pitch: float = 0.0  # 云台俯仰角
-    turret_yaw: float = 0.0  # 云台偏航角
-    horizontal_motor: float = 0.0  # 水平旋转电机角度
-    vertical_motor: float = 0.0  # 低头抬头电机角度
-
-@dataclass
-class EnemyTarget:
-    x: float
-    y: float
-    direction: float  # 移动方向角
-    confidence: float  # 置信度
-    velocity: float = 0.0  # 预测速度
-
-@dataclass
-class TaskPoint:
-    name: str  # 任务点标识
-    x: float
-    y: float
-
-@dataclass
-class StaticObstacle:
-    x: float
-    y: float
-    size: float  # 障碍物半径或近似边长
-
-@dataclass
-class DynamicObstacle:
-    x: float
-    y: float
-    vx: float  # x方向速度
-    vy: float  # y方向速度
-    size: float  # 障碍物大小
-
-@dataclass
-class RobotInfo:
-    id: int
-    team: str  # "ally" 或 "enemy"
-    x: float
-    y: float
-    color: str
 
 @dataclass
 class WorldModel:
-    self_pose: SelfPose
-    enemy_targets: List[EnemyTarget]
-    task_points: List[TaskPoint]
-    static_obstacles: List[StaticObstacle]
-    dynamic_obstacles: List[DynamicObstacle]
-    robots: List[RobotInfo]  # 敌我机器人信息
+    # 自车定位位姿，含位置和朝向
+    self_pose: Pose2D
+    # 云台状态，含姿态和电机角度
+    turret_state: TurretState
+    # 任务点列表（保留原数据结构或可移至 common/types）
+    task_points: List  
+    # 静态障碍和动态障碍列表（自定义结构）
+    static_obstacles: List
+    dynamic_obstacles: List
+    # 敌我机器人信息列表，使用共用类型
+    robots: List[RobotInfo]

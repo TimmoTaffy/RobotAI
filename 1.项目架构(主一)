@@ -1,19 +1,21 @@
 RobotAI/
-├── sensors/                   # 统一管理所有传感器输入，主控接收后传给开发板
-│   ├── serial_receiver.py     # 接收主控发来的 USB 串口 JSON 数据
-│   ├── imu.py                 # 从 serial_receiver 获取主控板上的 IMU（BMI088）数据
-│   ├── magnetometer.py        # 从 serial_receiver 获取主控板上的磁力计（IST8310）数据
-│   ├── wheel_encoder.py       # 从 serial_receiver 获取电调反馈数据（各轮角速度）
-│   ├── lidar.py               # 从 serial_receiver 获取底盘雷达点云数据，同时支持反射率和标记信息
-│   ├── base_gyro.py           # 从 serial_receiver 获取底盘上的陀螺仪数据
-│   ├── radar_station.py       # 从 serial_receiver 获取雷达站发送的单位位置
-│   └── vision.py              # 从 serial_receiver 获取视觉识别结果
+├── common/                    # 公共数据类型和工具
+│   └── types.py               # 标准数据结构（Pose2D/Pose3D, Transform, SensorData等）
+├── sensors/                   # 统一管理传感器输入，输出标准数据类型 (ImuData, WheelData, LidarData 等)
+│   ├── serial_receiver.py     # 接收并预处理 JSON 数据，添加时间戳、numpy转换
+│   ├── imu.py                 # 获取 IMU 数据，输出 ImuData
+│   ├── wheel_encoder.py       # 获取轮速数据，输出 WheelData
+│   ├── lidar.py               # 获取点云数据，输出 LidarData
+│   ├── magnetometer.py        # 获取磁力计数据，输出 MagData
+│   ├── base_gyro.py           # 获取底盘陀螺仪数据，输出 GyroData
+│   ├── radar_station.py       # 获取雷达站定位数据，输出 RadarStationData
+│   └── vision.py              # 获取视觉识别结果，输出 VisionData
 │
-├── transforms/                # 坐标变换：所有数据源先变换到车体坐标，再到世界坐标
-│   ├── camera_to_vehicle.py   # 相机→车体
-│   ├── lidar_to_vehicle.py    # 雷达→车体
-│   ├── turret_to_vehicle.py   # 云台→车体（新增）
-│   └── vehicle_to_world.py    # 车体→世界
+├── transforms/                # 坐标变换模块，使用 Transform 类型描述各系间变换
+│   ├── camera_to_vehicle.py   # 相机→车体，支持点云和图像投影
+│   ├── lidar_to_vehicle.py    # 雷达→车体，支持批量点云转换
+│   ├── turret_to_vehicle.py   # 云台→车体，处理 Pose3D 转换
+│   └── vehicle_to_world.py    # 车体→世界，处理平面 Pose2D 转换
 │
 ├── localization/              # 自车状态估计（A子线）实现 Dead Reckoning、IMU 标定和 EKF 融合，输出 (x,y,θ,v)
 │   ├── dead_reckoning.py      # 纯轮速推算
@@ -22,7 +24,7 @@ RobotAI/
 │   └── turret_pose.py         # 云台姿态估计：根据陀螺仪、磁力计和电机角度数据，解算俯仰角、偏航角和电机角度，更新到 world_model
 │
 ├── mapping/                   # 地图构建（B子线）接 Livox 点云，去地面→聚类→生成占据栅格或障碍列表
-│   ├── lidar_processor.py     # 点云滤地面、聚类，支持基于标记信息过滤
+│   ├── lidar_processor.py     # 点云滤地面、聚类
 │   ├── occupancy_grid.py      # 栅格地图生成
 │   └── map_builder.py         # 统一接口
 │
