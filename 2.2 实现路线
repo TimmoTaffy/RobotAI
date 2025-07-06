@@ -11,13 +11,16 @@
    • 实现标准转换接口：transform_utils.py、camera_to_vehicle.py、lidar_to_vehicle.py、turret_to_vehicle.py、vehicle_to_world.py
    • 全部使用 Transform、Pose2D、Pose3D 类型，统一参数验证与异常处理
 
-3. 传感器接口标准化 [进行中]
-   • 改造 serial_receiver.py：添加本地时间戳、JSON预处理、numpy转换、阻塞/非阻塞接口
-   • 更新传感器模块，输出标准数据类型：
+3. 传感器接口标准化 [已完成]
+   • serial_receiver.py 已支持时间戳、JSON预处理、numpy转换、阻塞/非阻塞接口
+   • 所有传感器模块已输出标准数据类型：
      - imu.py → ImuData
      - wheel_encoder.py → WheelData
      - lidar.py → LidarData
-     - （待完成：magnetometer.py、base_gyro.py、radar_station.py、vision.py）
+     - magnetometer.py → MagData
+     - base_gyro.py → GyroData
+     - radar_station.py → RadarStationData
+     - vision.py → VisionData
 
 4. 自车状态估计 [待开始]
    • 使用 Pose2D 类型：dead_reckoning.py、ekf_fusion.py 实现平面位姿估计
@@ -40,7 +43,7 @@
 当前进度：
 ✔ 数据结构标准化
 ✔ 坐标变换系统
-🟡 传感器接口标准化
+✔ 传感器接口标准化
 ⭕ 自车状态估计
 ⭕ 环境感知与目标跟踪
 ⭕ 可视化与调试

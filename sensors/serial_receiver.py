@@ -49,6 +49,8 @@ class SerialReceiver:
                     turret = data["turret"]
                     if "angles" in turret:
                         turret["angles"] = np.array(turret["angles"])
+                    if "motor_angles" in turret:
+                        turret["motor_angles"] = np.array(turret["motor_angles"])
                 
                 self.last_data = data
                 self.queue.put(data)                            # 将解析后的数据存入队列（self.queue.put(data)）

@@ -26,12 +26,12 @@ RobotAI/
 ├── mapping/                   # 地图构建（B子线）接 Livox 点云，去地面→聚类→生成占据栅格或障碍列表
 │   ├── lidar_processor.py     # 点云滤地面、聚类
 │   ├── occupancy_grid.py      # 栅格地图生成
-│   └── map_builder.py         # 统一接口
+│   └── map_builder.py         # 统一接口，更新 WorldModel 中的 occupancy_grid 和 dynamic_obstacles
 │
 ├── tracking/                  # 敌人 & 动态障碍跟踪 接收来自 radar/vision/world_model 的目标，维护跟踪列表
 │   └── target_tracker.py      # 多源融合、置信度管理
 │
 ├── world_model.py             # 统一的数据结构：自车、敌人、静/动障碍、任务点、雷达站机器人信息
-│                              # 包括云台姿态（俯仰角、偏航角）和电机角度（水平、垂直）
+│                              # 包括云台姿态（俯仰角、偏航角）、电机角度（水平、垂直）、最新的 occupancy_grid
 │
-└── 2.3 主控输出JSON协议       # 定义主控发送的 JSON 数据格式，包括新增的云台电机角度字段
+└── 2.3 主控输出JSON协议         # 定义主控发送的 JSON 数据格式，包括新增的云台电机角度字段

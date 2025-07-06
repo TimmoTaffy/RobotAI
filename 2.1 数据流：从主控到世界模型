@@ -43,9 +43,13 @@ imu_data = ImuData(
 6. WorldModel 更新
 • 使用标准类型填充 world_model.py 中的属性：
 ```python
-wm.self_pose = vehicle_pose       # Pose2D
-wm.turret_state = turret_state    # TurretState
-wm.obstacles = lidar_data         # LidarData
-wm.targets = tracked_targets      # List[Target]
+wm.self_pose = vehicle_pose                  # Pose2D
+wm.turret_state = turret_state               # TurretState
+# 使用 map_builder 生成栅格地图并更新世界模型
+occupancy_grid, dynamic_clusters = build_map(lidar_data.points, grid_size, map_size, wm)
+# 或者直接赋值
+wm.occupancy_grid = occupancy_grid           # np.ndarray 二维栅格地图
+wm.dynamic_obstacles = dynamic_clusters      # List[np.ndarray] 动态障碍簇列表
+wm.robots = tracked_targets                  # List[RobotInfo]
 ```
-• 最终得到统一的世界模型，供决策、规划和可视化使用
+• 最终得到包含定位、地图、障碍、目标的完整世界模型，供决策、规划和可视化使用

@@ -186,9 +186,13 @@ class LidarData(SensorData):
     ```
     """
     points: np.ndarray       # Nx3点云数组，每行[x, y, z]
-    intensities: np.ndarray  # 反射率数组
+    intensities: np.ndarray  # 反射率/强度数组
     ranges: np.ndarray       # 距离数组
     angles: np.ndarray       # 角度数组（弧度）
+    times: Optional[np.ndarray] = None    # 每点时间偏移（秒）
+    rings: Optional[np.ndarray] = None    # 每点激光线圈编号
+    dirty_percentage: float = 0.0         # 雷达脏污百分比
+    imu_quaternion: Optional[np.ndarray] = None  # L1输出的IMU四元数
 
 @dataclass
 class MagData(SensorData):

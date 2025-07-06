@@ -3,6 +3,7 @@
 """
 from dataclasses import dataclass
 from typing import List
+import numpy as np
 from common.types import Pose2D, TurretState, RobotInfo
 
 
@@ -17,5 +18,7 @@ class WorldModel:
     # 静态障碍和动态障碍列表（自定义结构）
     static_obstacles: List
     dynamic_obstacles: List
+    # 最新生成的二维栅格地图
+    occupancy_grid: np.ndarray
     # 敌我机器人信息列表，使用共用类型
     robots: List[RobotInfo]

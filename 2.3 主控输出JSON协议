@@ -1,53 +1,49 @@
-{
-  "timestamp": 1234567890.123,  // 时间戳，单位为秒（浮点数）
+{  "timestamp": 1234567890.123,  // 消息时间戳（秒）
   "magnetometer": {
-    "field": [30.5, -15.2, 50.1]  // 磁场强度 (x, y, z)，单位 μT
+    "field": [30.5, -15.2, 50.1]  // 磁力计读数（μT）
   },
   "imu": {
-    "gyro": [0.01, 0.02, 0.03],  // 陀螺仪角速度 (rad/s)，x, y, z 三轴
-    "acc": [0.1, 0.2, -9.8],     // 加速度计加速度 (m/s^2)，x, y, z 三轴
-    "yaw": 1.57                  // 航向角 (rad)
+    "gyro": [0.01, 0.02, 0.03],  // 陀螺仪角速度（rad/s）
+    "acc": [0.1, 0.2, -9.8],     // 加速度计线性加速度（m/s²）
+    "yaw": 1.57                  // 航向角（rad）
   },
   "wheel": {
-    "left": 1.2,                 // 左轮角速度 (rad/s)
-    "right": 1.3                 // 右轮角速度 (rad/s)
+    "left": 1.2,                 // 左轮线速度（m/s）
+    "right": 1.3                 // 右轮线速度（m/s）
   },
   "lidar": {
-    "point_cloud": [             // 点云数据，N×3 的数组
+    "scan_id": 1,                       // 当前扫描编号
+    "start_time": 1683874145.535988,    // 扫描起始时间（秒）
+    "point_count": 278,                 // 点云数量
+    "point_cloud": [                    // 点云坐标 N×3 数组
       [1.0, 2.0, 0.0],
       [1.5, 2.5, 0.1],
       [2.0, 3.0, 0.2]
-    ]
+    ],
+    "intensities": [150, 200, 255],     // 点云反射率
+    "times": [                          // 每个点的时间戳，相对或绝对（秒）
+      0.0001,
+      0.0002,
+      0.0003
+    ],
+    "rings": [0, 1, 2],                 // 每个点对应的激光线圈编号
+    "dirty_percentage": 0.05,           // 脏点比例
+    "imu_quaternion": [0.0, 0.0, 0.0, 1.0] // 扫描起始时刻的 IMU 四元数 (x,y,z,w)
   },
   "radar_station": {
-    "robots": [                  // 雷达站识别的机器人信息
-      {
-        "id": 1,
-        "team": "ally",          // 队伍："ally" 或 "enemy"
-        "x": 1.2,                // 世界坐标系下的 x 坐标
-        "y": 3.4,                // 世界坐标系下的 y 坐标
-        "color": "blue",         // 颜色
-        "hp": 100                // 血量
-      },
-      {
-        "id": 2,
-        "team": "enemy",
-        "x": 5.6,
-        "y": 7.8,
-        "color": "red",
-        "hp": 80
-      }
+    "robots": [                   // RadarStationData.robots
+      {"id":1,"team":"ally","x":1.2,"y":3.4,"color":"blue"},
+      {"id":2,"team":"enemy","x":5.6,"y":7.8,"color":"red"}
     ]
   },
   "vision": {
-    "robots": [                  // 视觉识别的机器人信息
-      {
-        "id": 3,
-        "team": "enemy",
-        "x": 2.5,
-        "y": 4.5,
-        "confidence": 0.95       // 置信度
-      }
+    "robots": [                   // VisionData.robots
+      {"id":3,"team":"enemy","x":2.5,"y":4.5}
     ]
+  },
+  "turret": {                    // TurretState 数据
+    "pitch":0.1,
+    "yaw":0.5,
+    "motor_angles":{"horizontal":45.0,"vertical":10.0}
   }
 }
