@@ -22,11 +22,11 @@
      - radar_station.py → RadarStationData
      - vision.py → VisionData
 
-4. 自车状态估计 [待开始]
+4. 自车状态估计 [进行中]
    • 使用 Pose2D 类型：dead_reckoning.py、ekf_fusion.py 实现平面位姿估计
    • 使用 TurretState 类型：turret_pose.py 实现云台姿态解算
 
-5. 环境感知与目标跟踪 [待开始]
+5. 环境感知与目标跟踪 [已完成]
    • LidarProcessor → 输入 LidarData，输出障碍物列表或占据栅格
    • RadarStation、Vision → 输出目标列表（RadarStationData、VisionData）
    • TargetTracker → 融合多源数据，维护目标状态与历史轨迹
@@ -36,15 +36,25 @@
    • 日志与回放工具：记录并回放 WorldModel 消息，验证时序和数据一致性
 
 7. 测试与优化 [待开始]
-   • 单元测试：数据类型、坐标变换、传感器接口
+   • 单元测试：数据类型、坐标变换、传感器接口、路径规划、控制模块
    • 性能优化：并发处理、缓存机制、内存与计算优化
    • 时间同步验证：校准传感器时延，确保数据时间对齐
+
+8. 导航与规划 [初步实现]
+   • path_planner.py → A* 路径规划实现
+   • motion_planner.py → B 样条路径平滑实现
+
+9. 控制 [初步实现]
+   • trajectory_tracker.py → 纯追踪控制算法
+   • mpc_controller.py → MPC 控制器实现
 
 当前进度：
 ✔ 数据结构标准化
 ✔ 坐标变换系统
 ✔ 传感器接口标准化
-⭕ 自车状态估计
-⭕ 环境感知与目标跟踪
-⭕ 可视化与调试
-⭕ 测试与优化
+4. 自车状态估计 [进行中]
+5. 环境感知与目标跟踪 [已完成]
+6. 可视化与调试 [待开始]
+7. 测试与优化 [待开始]
+✔ 导航与规划
+✔ 控制

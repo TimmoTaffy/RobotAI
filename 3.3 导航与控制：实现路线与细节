@@ -1,0 +1,52 @@
+3.3 导航与控制：实现路线与细节
+
+## 1. 导航 (Planning)
+
+### 1.1 全局/局部路径规划
+- 模块：`planning/path_planner.py`  
+- 算法：A*（八邻域）  
+- 输入：
+  - `start`、`goal` 世界坐标 (x,y)
+  - `occupancy_grid`：世界模型中的占据栅格  
+  - `grid_size`：栅格尺寸  
+- 输出：离散栅格路径列表 → 转换回世界坐标路径点  
+
+### 1.2 运动轨迹平滑
+- 模块：`planning/motion_planner.py`  
+- 算法：CubicSpline B 样条插值  
+- 输入：A* 生成的离散路径点  
+- 输出：连续平滑轨迹 (N×2 数组)，后续控制器使用
+
+### 1.3 调用示例
+```python
+from planning.path_planner import AStarPlanner
+from planning.motion_planner import smooth_path
+
+planner = AStarPlanner(grid, grid_size)
+raw_path = planner.plan(start_point, goal_point)
+smooth_traj = smooth_path(raw_path, num_points=100)
+```
+
+## 2. 控制 (Control)
+
+### 2.1 纯追踪控制 (Pure Pursuit)
+- 模块：`control/trajectory_tracker.py`  
+- 算法：纯追踪，前瞻点法  
+- 输入：当前位姿 `Pose2D`、平滑轨迹点数组  
+- 输出：线速度 v 和转向角 steering_angle
+
+### 2.2 MPC 控制器
+- 模块：`control/mpc_controller.py`  
+- 算法：离散时域 Unicycle 模型的二次规划  
+- 输入：当前位姿 `Pose2D`、参考轨迹 (N+1×3 包含 θ)  
+- 输出：最优线速度 v 与角速度 ω
+
+### 2.3 调用示例
+```python
+# Pure Pursuit
+tracker = TrajectoryTracker(lookahead_distance=1.0)
+v, steer = tracker.update(current_pose, smooth_traj)
+# MPC
+mpc = MPCController(horizon=10, dt=0.1)
+v_mpc, omega_mpc = mpc.update(current_pose, ref_traj)
+```

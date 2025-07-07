@@ -1,0 +1,33 @@
+{
+  "serial": {
+    "port": "/dev/ttyUSB0",
+    "baudrate": 115200
+  },
+  "loop_rate": 10,
+  "transforms": {
+    "lidar_to_vehicle": {
+      "translation": [0.0, 0.0, 0.0],
+      "rotation": [0.0, 0.0, 0.0],
+      "parent_frame": "vehicle",
+      "child_frame": "lidar"
+    }
+  },
+  "map": {
+    "grid_size": 0.1,
+    "size": [100, 100]
+  },
+  "tracker": {
+    "max_age": 0.5
+  },
+  "planning": {
+    "goal": [50, 50],
+    "num_points": 100
+  },
+  "control": {
+    "method": "pure_pursuit",
+    "lookahead_distance": 1.0,
+    "desired_speed": 1.0,
+    "mpc_horizon": 10,
+    "mpc_dt": 0.1
+  }
+}

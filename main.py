@@ -8,6 +8,7 @@ import time
 import logging
 import argparse
 import json
+import numpy as np
 
 from sensors.serial_receiver import SerialReceiver
 from sensors.imu import IMU
@@ -20,6 +21,10 @@ from transforms.lidar_to_vehicle import transform_lidar_to_vehicle
 from mapping.map_builder import build_map
 from tracking.target_tracker import TargetTracker
 from world_model import WorldModel
+from planning.path_planner import AStarPlanner
+from planning.motion_planner import smooth_path
+from control.trajectory_tracker import TrajectoryTracker as PurePursuitTracker
+from control.mpc_controller import MPCController
 from localization.dead_reckoning import DeadReckoning
 from localization.imu_calibration import IMUCalibration
 from localization.ekf_fusion import EKFFusion
@@ -33,7 +38,20 @@ default_config = {
         "lidar_to_vehicle": None # 需在 config.json 中填入 Transform dict
     },
     "map": {"grid_size": 0.1, "size": [100, 100]},
-    "tracker": {"max_age": 0.5}
+    "tracker": {"max_age": 0.5},
+    # 导航与规划配置
+    "planning": {
+        "goal": [50, 50],        # 目标位置 (x, y)
+        "num_points": 100        # 平滑轨迹点数
+    },
+    # 控制配置
+    "control": {
+        "method": "pure_pursuit",  # "pure_pursuit" 或 "mpc"
+        "lookahead_distance": 1.0,
+        "desired_speed": 1.0,
+        "mpc_horizon": 10,
+        "mpc_dt": 0.1
+    }
 }
 
 def load_config(path):
@@ -70,12 +88,23 @@ def main():
     lidar_sensor = LidarSensor(receiver)
     radar_sensor = RadarStation(receiver)
     vision_sensor = VisionSensor(receiver)
+    tracker = TargetTracker(cfg['tracker']['max_age'])
+    # 规划与控制模块初始化
+    planner = None  # 在获得地图后初始化
+    pure_tracker = PurePursuitTracker(
+        lookahead_distance=cfg['control']['lookahead_distance'],
+        desired_speed=cfg['control']['desired_speed']
+    )
+    mpc = MPCController(
+        horizon=cfg['control']['mpc_horizon'],
+        dt=cfg['control']['mpc_dt']
+    )
+
     # Localization 模块初始化
     dr = DeadReckoning()
     imu_calib = IMUCalibration()
     ekf = EKFFusion()
     turret_localizer = TurretPose()
-    tracker = TargetTracker(cfg['tracker']['max_age'])
 
     # world model 初始化
     wm = WorldModel(
@@ -125,6 +154,21 @@ def main():
             # 4. 目标跟踪 & 更新 WorldModel
             tracked = tracker.update(radar_data, vision_data)
             wm.robots = tracked
+            # 5. 路径规划 & 运动规划
+            # 初始化 planner 需在首次循环中执行
+            if planner is None:
+                planner = AStarPlanner(wm.occupancy_grid, cfg['map']['grid_size'])
+            start = tuple(wm.self_pose.position)
+            goal = tuple(cfg['planning']['goal'])
+            raw_path = planner.plan(start, goal)
+            smooth_traj = smooth_path(raw_path, cfg['planning']['num_points'])
+            # 6. 控制命令
+            if cfg['control']['method'] == 'mpc':
+                v_cmd, omega_cmd = mpc.update(wm.self_pose, np.hstack((smooth_traj, np.zeros((smooth_traj.shape[0],1)))))
+            else:
+                v_cmd, omega_cmd = pure_tracker.update(wm.self_pose, smooth_traj)
+            # 发送或记录命令
+            logger.debug(f"Control cmd: v={v_cmd:.2f}, omega={omega_cmd:.2f}")
 
             # 5. 其他处理（可选：日志、可视化、路径规划）
             # ...

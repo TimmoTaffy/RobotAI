@@ -1,6 +1,8 @@
 RobotAI/
 ├── common/                    # 公共数据类型和工具
 │   └── types.py               # 标准数据结构（Pose2D/Pose3D, Transform, SensorData等）
+├── config.json                # 运行配置文件
+├── config说明.md              # 配置字段说明文档
 ├── sensors/                   # 统一管理传感器输入，输出标准数据类型 (ImuData, WheelData, LidarData 等)
 │   ├── serial_receiver.py     # 接收并预处理 JSON 数据，添加时间戳、numpy转换
 │   ├── imu.py                 # 获取 IMU 数据，输出 ImuData
@@ -46,3 +48,9 @@ RobotAI/
 └── control/                   # 运动控制模块
     ├── trajectory_tracker.py  # 轨迹跟踪（PID/MPC）
     └── mpc_controller.py      # MPC 控制器实现
+
+    
+├── main.py                 # 系统集成主循环脚本
+├── config.json             # 运行配置文件
+├── config说明.md           # 配置字段说明文档
+└── requirements.txt        # Python 包依赖
