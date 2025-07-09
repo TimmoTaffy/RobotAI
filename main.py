@@ -22,7 +22,7 @@ from mapping.map_builder import build_map
 from tracking.target_tracker import TargetTracker
 from world_model import WorldModel
 from planning.path_planner import AStarPlanner
-from planning.motion_planner import smooth_path
+from planning.motion_planner import smooth_path, generate_velocity_profile
 from control.trajectory_tracker import TrajectoryTracker as PurePursuitTracker
 from control.mpc_controller import MPCController
 from localization.dead_reckoning import DeadReckoning
@@ -148,7 +148,8 @@ def main():
                 raw_lidar.points,
                 cfg['map']['grid_size'],
                 cfg['map']['size'],
-                wm
+                wm,
+                cfg['map']
             )
 
             # 4. 目标跟踪 & 更新 WorldModel
@@ -162,11 +163,14 @@ def main():
             goal = tuple(cfg['planning']['goal'])
             raw_path = planner.plan(start, goal)
             smooth_traj = smooth_path(raw_path, cfg['planning']['num_points'])
+            # 5.5 运动规划：给平滑轨迹分配速度，生成带速度的轨迹点
+            motion_traj = generate_velocity_profile(smooth_traj, cfg['control']['desired_speed'])
             # 6. 控制命令
             if cfg['control']['method'] == 'mpc':
-                v_cmd, omega_cmd = mpc.update(wm.self_pose, np.hstack((smooth_traj, np.zeros((smooth_traj.shape[0],1)))))
+                # 使用带速度的运动轨迹进行 MPC 控制
+                v_cmd, omega_cmd = mpc.update(wm.self_pose, motion_traj)
             else:
-                v_cmd, omega_cmd = pure_tracker.update(wm.self_pose, smooth_traj)
+                v_cmd, omega_cmd = pure_tracker.update(wm.self_pose, motion_traj)
             # 发送或记录命令
             logger.debug(f"Control cmd: v={v_cmd:.2f}, omega={omega_cmd:.2f}")
 

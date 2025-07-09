@@ -42,11 +42,11 @@
 
 8. 导航与规划 [初步实现]
    • path_planner.py → A* 路径规划实现
-   • motion_planner.py → B 样条路径平滑实现
+   • motion_planner.py → B 样条路径平滑实现，新增 `generate_velocity_profile` 分配速度 (N×3 输出)
 
 9. 控制 [初步实现]
-   • trajectory_tracker.py → 纯追踪控制算法
-   • mpc_controller.py → MPC 控制器实现
+   • trajectory_tracker.py → 纯追踪控制算法，支持输入带速度的轨迹 (N×3)
+   • mpc_controller.py → MPC 控制器实现，使用带速度和航向角的参考轨迹 (N+1×3)
 
 当前进度：
 ✔ 数据结构标准化
@@ -56,5 +56,5 @@
 5. 环境感知与目标跟踪 [已完成]
 6. 可视化与调试 [待开始]
 7. 测试与优化 [待开始]
-✔ 导航与规划
-✔ 控制
+✔ 导航与规划 (含生成速度轨迹)
+✔ 控制 (含 Pure Pursuit & MPC)

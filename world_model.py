@@ -20,5 +20,7 @@ class WorldModel:
     dynamic_obstacles: List
     # 最新生成的二维栅格地图
     occupancy_grid: np.ndarray
+    # 地面坡度分析结果，每个距离区间对应的坡度角 (弧度)
+    ground_slopes: dict
     # 敌我机器人信息列表，使用共用类型
     robots: List[RobotInfo]

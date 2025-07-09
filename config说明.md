@@ -28,6 +28,10 @@
 
 - **grid_size**: 栅格地图分辨率（米），数字
 - **size**: 地图尺寸 `[width, height]`，栅格数量
+- **ground_threshold**: 地面高度阈值（米），数字，用于地面分割／RANSAC 拟合
+- **cluster_distance**: 障碍聚类距离 ε（米），数字，用于 DBSCAN 聚类
+- **use_ransac**: 是否启用 RANSAC 地面拟合，布尔值（`true`/`false`）
+- **slope_distances**: 地面坡度分段距离列表（米），数组，例如 `[1.0, 2.0, 3.0]`，用于分析不同距离区间的坡度
 
 ## tracker
 

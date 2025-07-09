@@ -1,5 +1,7 @@
 import numpy as np
 from sklearn.cluster import DBSCAN
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import RANSACRegressor
 
 class LidarProcessor:
     def __init__(self, ground_threshold=0.2, cluster_distance=0.5, use_ransac=False):  
@@ -70,3 +72,47 @@ class LidarProcessor:
         cluster_labels, clustered_points = self.cluster_obstacles(non_ground_points)
 
         return cluster_labels, clustered_points
+
+    def analyze_ground_slope(self, point_cloud: np.ndarray, distances: list) -> dict:
+        """
+        计算不同距离范围的地面坡度角。
+        :param point_cloud: N×3 点云数组
+        :param distances: 递增距离列表，例如 [1,2,3] 表示分段 [0,1], [1,2], [2,3]
+        :return: dict，键为 (min_d, max_d)，值为坡度角（弧度），若点数不足返回 None
+        """
+        # 1. 提取地面点
+        if self.use_ransac and point_cloud.shape[0] > 10:
+            X = point_cloud[:, :2]
+            y = point_cloud[:, 2]
+            model = RANSACRegressor(LinearRegression(), residual_threshold=self.ground_threshold)
+            model.fit(X, y)
+            # inlier_mask_ 为地面点
+            ground_pts = point_cloud[model.inlier_mask_]
+        else:
+            # 简易高度阈值
+            ground_pts = point_cloud[point_cloud[:, 2] <= self.ground_threshold]
+
+        slopes = {}
+        prev_d = 0.0
+        # 遍历每个距离区间
+        for d in distances:
+            # 环形区域掩码
+            dist_xy = np.linalg.norm(ground_pts[:, :2], axis=1)
+            mask = (dist_xy >= prev_d) & (dist_xy < d)
+            seg_pts = ground_pts[mask]
+            if seg_pts.shape[0] >= 3:
+                # 平面拟合（最小二乘）
+                X_seg = seg_pts[:, :2]
+                z_seg = seg_pts[:, 2]
+                lr = LinearRegression().fit(X_seg, z_seg)
+                a, b = lr.coef_
+                # 法向量
+                normal = np.array([a, b, -1.0])
+                normal /= np.linalg.norm(normal)
+                # 坡度角 = arccos( |n·[0,0,1]| )
+                slope = np.arccos(abs(normal.dot([0, 0, 1])))
+                slopes[(prev_d, d)] = float(slope)
+            else:
+                slopes[(prev_d, d)] = None
+            prev_d = d
+        return slopes

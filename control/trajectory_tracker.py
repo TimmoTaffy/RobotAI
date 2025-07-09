@@ -10,7 +10,7 @@ class TrajectoryTracker:
         """
         :param lookahead_distance: 纯追踪算法的前瞻距离 (m)
         :param kp_speed: 线速度控制增益
-        :param desired_speed: 期望巡航速度 (m/s)
+        :param desired_speed: 期望巡航速度 (m/s)，当轨迹未提供速度时使用
         """
         self.Ld = lookahead_distance
         self.kp_speed = kp_speed
@@ -20,7 +20,7 @@ class TrajectoryTracker:
         """
         生成线速度和转向角命令
         :param current_pose: 车辆当前位姿 (Pose2D)
-        :param trajectory: N×2 路径点数组 [[x,y], ...]
+        :param trajectory: N×2 或 N×3 路径点数组 [[x,y,(v)], ...]，第三列为目标速度
         :return: (v, steering_angle)
         """
         # 提取当前位置
@@ -28,7 +28,7 @@ class TrajectoryTracker:
         theta = current_pose.theta
 
         # 计算与路径点的距离
-        deltas = trajectory - np.array([x, y])
+        deltas = trajectory[:, :2] - np.array([x, y])
         dists = np.linalg.norm(deltas, axis=1)
         # 找到第一个超过前瞻距离的目标点
         idx = np.where(dists > self.Ld)[0]
@@ -36,6 +36,12 @@ class TrajectoryTracker:
             goal = trajectory[idx[0]]
         else:
             goal = trajectory[-1]
+
+        # 提取目标速度
+        if trajectory.shape[1] >= 3:
+            goal_speed = float(goal[2])
+        else:
+            goal_speed = self.desired_speed
 
         dx = goal[0] - x
         dy = goal[1] - y
@@ -46,10 +52,9 @@ class TrajectoryTracker:
         alpha = (alpha + np.pi) % (2 * np.pi) - np.pi
 
         # 转向角 (假设小车前轮转向模型)
-        # steering = arctan(2*L*sin(alpha)/Ld)，L 为轴距，可设置为 1.0
         L = 1.0
         steering_angle = np.arctan2(2 * L * np.sin(alpha), self.Ld)
 
         # 线速度控制
-        v = self.kp_speed * (self.desired_speed)
+        v = self.kp_speed * goal_speed
         return v, steering_angle
