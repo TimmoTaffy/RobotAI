@@ -1,0 +1,260 @@
+1. 环境与依赖
+   1.1 安装依赖库
+   1.2 配置参数
+       • 编辑 `config.json`
+
+2. 单元测试
+   2.1 Planning 模块（路径规划算法验证）
+       • 测试场景：
+         - 简单直线路径：验证路径连通性、代价最优性、单调性
+         - 复杂障碍绕行：20×20地图、矩形障碍+开口、验证绕行必要性
+         - 多条等价路径：对角线路径的算法一致性
+         - 大地图性能：100×100地图+随机障碍，执行时间<1秒
+         - 边界情况：起点=终点、相邻点、不同grid_size缩放
+         - 不可达情况：连通性检查和异常处理
+       • 验证指标：
+         - 路径连通性（相邻步长 ≤ √2）
+         - 路径代价最优性（与直线距离对比，允许10%偏差）
+         - 障碍避让（所有路径点位于自由空间）
+         - 计算性能（大地图规划时间<1秒）
+       • 实现文件：`tests/test_path_planner.py`（7个测试函数）
+         1. `test_direct_path()` - 验证空地图直线路径的连通性、最优性和单调性
+         2. `test_obstacle_avoidance()` - 测试复杂障碍绕行，验证必须绕行且避开所有障碍
+         3. `test_multiple_optimal_paths()` - 验证多条等价最优路径的算法一致性
+         4. `test_large_map_performance()` - 大地图(100×100)性能测试，要求<1秒
+         5. `test_unreachable()` - 测试不连通情况的异常处理
+         6. `test_edge_cases()` - 边界情况：起点=终点、相邻点
+         7. `test_grid_size_scaling()` - 不同grid_size下的路径规划验证
+   2.2 Motion 模块（轨迹平滑与速度分配验证）
+       • 测试场景：
+         - 路径平滑验证：锯齿路径→连续平滑，曲率连续性检查
+         - 路径长度保持：直线路径±0.1m偏差，锯齿路径在0.8-1.5倍原长度
+         - 关键拐点保留：L型路径的起点、终点、拐角点位置保持
+         - 速度分配准确性：恒定速度设置验证
+         - 可变速度分析：基于曲率的速度调整（如支持）
+         - 边界情况：单点路径、零速度、负速度处理
+       • 验证指标：
+         - 曲率连续性：二阶差分变化率<1.0
+         - 速度约束：v_max、a_max 不被突破，非负性
+         - 轨迹长度：平滑后长度在合理范围内（0.8-1.5倍）
+         - 关键点保持：起终点偏差<0.1m，拐点附近<0.5m
+       • 实现文件：`tests/test_motion_planner.py`（5个测试函数）
+         1. `test_smooth_path_shape_and_continuity()` - 验证平滑输出格式和曲率连续性
+         2. `test_path_length_preservation()` - 测试平滑前后路径长度的合理性保持
+         3. `test_key_point_preservation()` - 验证关键拐点(起终点、转角)位置保留
+         4. `test_generate_velocity_profile()` - 测试恒定速度分配的准确性
+         5. `test_variable_speed_profile()` - 测试可变速度和边界情况处理
+   2.3 Control 模块（控制器稳定性与响应验证）
+       • Pure Pursuit 测试：
+         - 直线跟踪精度：转向角<0.1rad，速度输出合理
+         - 前瞻距离敏感性：0.5-2.0m范围内的性能对比
+         - 曲线路径跟踪：圆形轨迹上的转向响应能力
+         - 误差纠正能力：大航向偏差(90°)和横向偏移(1m)的纠正
+         - 轨迹末端处理：接近终点时的控制稳定性
+         - 速度控制响应：不同kp_speed增益的输出对比
+       • MPC 控制测试：
+         - 直线轨迹跟踪：角速度接近0，速度>0
+         - 约束满足验证：v∈[0,2]、ω∈[-1,1]的严格检查
+         - 多类型误差纠正：横向、纵向、航向偏差的响应方向
+         - 曲线轨迹跟踪：非零角速度输出验证
+         - 计算性能：平均求解时间<0.1*dt
+         - 参数敏感性：不同horizon(5-20)和权重矩阵的影响
+       • 验证指标：
+         - 控制输出范围：速度非负，转向角/角速度在物理限制内
+         - 跟踪精度：直线跟踪转向<0.1rad，曲线跟踪有明显转向
+         - 误差纠正：不同偏差产生正确方向的纠正控制
+         - 计算效率：PP<0.0001s/次，MPC<0.01s/次
+       • 实现文件：
+         - `tests/test_trajectory_tracker.py`（7个测试函数）
+           1. `test_straight_line_tracking_accuracy()` - 验证直线跟踪的转向精度
+           2. `test_lookahead_distance_sensitivity()` - 测试不同前瞻距离的影响
+           3. `test_curved_path_tracking()` - 圆形轨迹跟踪能力验证
+           4. `test_large_heading_error_correction()` - 大航向偏差(90°)的纠正能力
+           5. `test_lateral_offset_correction()` - 横向偏移纠正验证
+           6. `test_trajectory_completion()` - 轨迹末端处理稳定性
+           7. `test_speed_control_response()` - 不同增益下的速度控制响应
+         - `tests/test_mpc_controller.py`（7个测试函数）
+           1. `test_mpc_straight_line_tracking()` - MPC直线跟踪基础功能验证
+           2. `test_mpc_constraint_satisfaction()` - 严格约束满足检查(v,ω限制)
+           3. `test_mpc_pose_error_correction()` - 多类型位姿误差的纠正响应
+           4. `test_mpc_curved_trajectory_tracking()` - 曲线轨迹跟踪能力
+           5. `test_mpc_computational_performance()` - 计算性能测试(<0.1*dt)
+           6. `test_mpc_horizon_sensitivity()` - 不同预测步长的性能影响
+           7. `test_mpc_weight_matrix_influence()` - 权重矩阵对控制行为的影响
+
+   2.4 集成测试模块（端到端系统验证）
+       • 端到端流程测试：
+         - 完整导航链路：路径规划→轨迹平滑→速度分配→控制跟踪
+         - 障碍避障导航：复杂环境下的系统综合表现
+         - 控制器性能对比：Pure Pursuit vs MPC在相同轨迹上的表现
+       • 性能基准测试：
+         - 大规模场景：50×50地图+200障碍，规划时间<0.5s
+         - 实时性验证：平滑<0.1s，控制器计算满足实时要求
+       • 鲁棒性测试：
+         - 极短路径、零速度轨迹等边界情况
+         - 系统在异常输入下的稳定性
+       • 实现文件：`tests/test_integration.py`（6个测试函数）
+         1. `test_end_to_end_straight_navigation()` - 完整直线导航链路测试
+         2. `test_obstacle_avoidance_navigation()` - 复杂障碍环境的系统综合性能
+         3. `test_controller_comparison()` - Pure Pursuit vs MPC性能对比
+         4. `test_performance_benchmarks()` - 大规模场景性能基准测试
+         5. `test_edge_cases_robustness()` - 极短路径、零速度等边界鲁棒性
+         6. `TestNavigationControlIntegration` - 集成测试类，包含多个测试方法
+       
+   总计：**25个测试函数**，覆盖单元→集成→性能→鲁棒性四个层次
+   3.1 测试场景设计
+       • 标准测试用例：
+         - 直线导航：(0,0)→(10,0)，验证基础功能
+         - L型路径：(0,0)→(5,0)→(5,5)，测试转弯能力
+         - S型避障：构造障碍物，测试复杂路径跟踪
+         - 高速场景：desired_speed=2.0m/s，测试高速稳定性
+       • 边界条件：
+         - 极短距离：start与goal距离<1m
+         - 起始姿态偏差：robot初始朝向与路径方向夹角>45°
+   3.2 数据记录与监控
+       • 关键指标实时记录：
+         - 位姿历史：[x, y, θ, timestamp]
+         - 控制输出：[v, steering/omega, timestamp]
+         - 误差指标：横向误差、航向误差
+       • 异常检测：
+         - 控制饱和：检测v或omega超出物理限制
+         - 发散检测：连续N步横向误差递增
+         - 超时检测：总执行时间超过合理上限
+   3.3 参数敏感性分析
+       • Pure Pursuit lookahead：0.5、1.0、1.5、2.0m对比
+       • MPC horizon：5、10、15、20步对比
+       • 采样频率：dt=0.05、0.1、0.2s对比
+       • 记录各参数组合下的性能指标分布
+
+4. 可视化与评估
+   4.1 多维度可视化
+       • 轨迹对比图：参考轨迹vs实际轨迹，标注最大偏差点
+       • 时序分析：速度、角速度、横向误差随时间变化
+       • 控制性能：控制输出频谱分析，检测震荡
+       • 相平面图：位置误差vs速度误差，评估收敛特性
+   4.2 量化评估指标
+       • 精度指标：
+         - 最大横向误差 (Max Lateral Error)
+         - 均方根误差 (RMSE)
+         - 最终到达精度 (Final Position Error)
+       • 效率指标：
+         - 路径长度比 (Actual/Reference Path Length)
+         - 平均行驶时间
+         - 控制计算耗时统计
+       • 平滑性指标：
+         - 加速度变化率 (Jerk)
+         - 转向角变化率
+   4.3 性能基准与阈值
+       • 可接受性能：横向误差<0.2m，到达精度<0.1m
+       • 优秀性能：横向误差<0.1m，路径长度比<1.1
+       • 实时性要求：控制计算时间<0.1*dt
+
+3. 集成仿真脚本 (main.py)
+   3.1 测试场景设计
+       • 标准测试用例：
+         - 直线导航：(0,0)→(10,0)，验证基础功能
+         - L型路径：(0,0)→(5,0)→(5,5)，测试转弯能力
+         - S型避障：构造障碍物，测试复杂路径跟踪
+         - 高速场景：desired_speed=2.0m/s，测试高速稳定性
+       • 边界条件：
+         - 极短距离：start与goal距离<1m
+         - 起始姿态偏差：robot初始朝向与路径方向夹角>45°
+   3.2 数据记录与监控
+       • 关键指标实时记录：
+         - 位姿历史：[x, y, θ, timestamp]
+         - 控制输出：[v, steering/omega, timestamp]
+         - 误差指标：横向误差、航向误差
+       • 异常检测：
+         - 控制饱和：检测v或omega超出物理限制
+         - 发散检测：连续N步横向误差递增
+         - 超时检测：总执行时间超过合理上限
+   3.3 参数敏感性分析
+       • Pure Pursuit lookahead：0.5、1.0、1.5、2.0m对比
+       • MPC horizon：5、10、15、20步对比
+       • 采样频率：dt=0.05、0.1、0.2s对比
+       • 记录各参数组合下的性能指标分布
+
+4. 可视化与评估
+   4.1 多维度可视化
+       • 轨迹对比图：参考轨迹vs实际轨迹，标注最大偏差点
+       • 时序分析：速度、角速度、横向误差随时间变化
+       • 控制性能：控制输出频谱分析，检测震荡
+       • 相平面图：位置误差vs速度误差，评估收敛特性
+   4.2 量化评估指标
+       • 精度指标：
+         - 最大横向误差 (Max Lateral Error)
+         - 均方根误差 (RMSE)
+         - 最终到达精度 (Final Position Error)
+       • 效率指标：
+         - 路径长度比 (Actual/Reference Path Length)
+         - 平均行驶时间
+         - 控制计算耗时统计
+       • 平滑性指标：
+         - 加速度变化率 (Jerk)
+         - 转向角变化率
+   4.3 性能基准与阈值
+       • 可接受性能：横向误差<0.2m，到达精度<0.1m
+       • 优秀性能：横向误差<0.1m，路径长度比<1.1
+       • 实时性要求：控制计算时间<0.1*dt
+
+5. 自动化与 CI
+   5.1 pytest 集成与执行
+       • 依赖安装：`pip install -r requirements.txt`（已增加pytest）
+       • 执行命令：`pytest tests/ -v --tb=short`
+       • 测试覆盖：25个测试函数，覆盖率>90%
+       • CI配置：`.github/workflows/python.yml`
+         ```yaml
+         name: Navigation Control Tests
+         on: [push, pull_request]
+         jobs:
+           test:
+             runs-on: ubuntu-latest
+             steps:
+             - uses: actions/checkout@v2
+             - name: Set up Python
+               uses: actions/setup-python@v2
+               with: python-version: '3.8'
+             - run: pip install -r requirements.txt
+             - run: pytest tests/ --maxfail=3 --tb=short -v
+         ```
+   5.2 示例 Notebook
+       • 在 `notebooks/demo_navigation_control.ipynb` 中演示参数配置、脚本执行与可视化
+
+6. 运行验收
+   6.1 单元测试验收
+       • 执行命令：`pytest tests/ -v`
+       • 通过标准：25个测试函数全部通过
+       • 性能要求：
+         - Planning模块：大地图(100×100)规划<1s
+         - Motion模块：50点轨迹平滑<0.1s
+         - Control模块：PP计算<0.0001s，MPC<0.01s
+   6.2 集成功能验收
+       • 功能验收：
+         ```bash
+         python main.py --start 0,0 --goal 10,10 --controller pp
+         python main.py --start 0,0 --goal 10,10 --controller mpc
+         ```
+       • 性能验收：
+         ```bash
+         python benchmark.py --scenarios all --controllers pp,mpc --iterations 10
+         ```
+   6.3 验收标准升级
+       • 必达指标：
+         - 所有25个单元测试通过
+         - 标准测试用例成功到达目标
+         - 横向误差<0.2m（90%的时间）
+         - 控制计算时间满足实时性要求
+         - 无控制发散或系统崩溃
+       • 优化指标：
+         - Pure Pursuit vs MPC性能量化对比
+         - 参数敏感性分析报告
+         - 不同场景下的最优配置推荐
+   6.4 问题排查与优化流程
+       • 单元测试失败：检查算法实现、参数配置、数值精度
+       • 路径规划失败：验证地图数据、起止点合法性、连通性
+       • 控制性能不达标：调整lookahead/horizon、权重矩阵、约束参数
+       • 实时性不满足：算法优化、参数降维、并行计算
+   6.5 测试报告输出
+       • 自动生成测试报告：成功率、性能指标统计、参数优化建议
+       • 可视化结果：轨迹对比图、误差曲线、性能热力图
+       • 配置推荐：针对不同应用场景(高速/精确/实时)的参数组合
