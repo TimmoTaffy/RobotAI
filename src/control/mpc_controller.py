@@ -3,7 +3,7 @@ MPC 控制器模块: 基于模型预测控制生成线速与转向命令
 """
 import numpy as np
 import cvxpy as cp
-from common.types import Pose2D
+from src.common.types import Pose2D
 from typing import List, Tuple
 
 class MPCController:
@@ -47,11 +47,17 @@ class MPCController:
             cost += cp.quad_form(err, self.Q)
             # 控制cost
             cost += cp.quad_form(u[:,k], self.R)
+            
             # 系统动力学 (unicycle model)
-            theta_k = x[2,k]
-            constr += [x[0,k+1] == x[0,k] + u[0,k]*cp.cos(theta_k)*self.dt]
-            constr += [x[1,k+1] == x[1,k] + u[0,k]*cp.sin(theta_k)*self.dt]
+            # 对于非线性模型，我们使用线性化近似
+            theta_ref = ref_trajectory[k, 2]  # 使用参考角度进行线性化
+            cos_theta = np.cos(theta_ref)
+            sin_theta = np.sin(theta_ref)
+            
+            constr += [x[0,k+1] == x[0,k] + u[0,k]*cos_theta*self.dt]
+            constr += [x[1,k+1] == x[1,k] + u[0,k]*sin_theta*self.dt]
             constr += [x[2,k+1] == x[2,k] + u[1,k]*self.dt]
+            
             # 输入约束，可自行调整
             constr += [u[0,k] >= 0, u[0,k] <= 2.0]      # v ∈ [0,2] m/s
             constr += [u[1,k] >= -1.0, u[1,k] <= 1.0]   # omega ∈ [-1,1] rad/s

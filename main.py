@@ -10,25 +10,25 @@ import argparse
 import json
 import numpy as np
 
-from sensors.serial_receiver import SerialReceiver
-from sensors.imu import IMU
-from sensors.wheel_encoder import WheelEncoder
-from sensors.lidar import LidarSensor
-from sensors.radar_station import RadarStation
-from sensors.vision import VisionSensor
-from common.types import Transform
-from transforms.lidar_to_vehicle import transform_lidar_to_vehicle
-from mapping.map_builder import build_map
-from tracking.target_tracker import TargetTracker
+from src.sensors.serial_receiver import SerialReceiver
+from src.sensors.imu import IMU
+from src.sensors.wheel_encoder import WheelEncoder
+from src.sensors.lidar import LidarSensor
+from src.sensors.radar_station import RadarStation
+from src.sensors.vision import VisionSensor
+from src.common.types import Transform
+from src.transforms.lidar_to_vehicle import transform_lidar_to_vehicle
+from src.mapping.map_builder import build_map
+from src.tracking.target_tracker import TargetTracker
 from world_model import WorldModel
-from planning.path_planner import AStarPlanner
-from planning.motion_planner import smooth_path, generate_velocity_profile
-from control.trajectory_tracker import TrajectoryTracker as PurePursuitTracker
-from control.mpc_controller import MPCController
-from localization.dead_reckoning import DeadReckoning
-from localization.imu_calibration import IMUCalibration
-from localization.ekf_fusion import EKFFusion
-from localization.turret_pose import TurretPose
+from src.planning.path_planner import AStarPlanner
+from src.planning.motion_planner import smooth_path, generate_velocity_profile
+from src.control.trajectory_tracker import TrajectoryTracker as PurePursuitTracker
+from src.control.mpc_controller import MPCController
+from src.localization.dead_reckoning import DeadReckoning
+from src.localization.imu_calibration import IMUCalibration
+from src.localization.ekf_fusion import EKFFusion
+from src.localization.turret_pose import TurretPose
 
 # 默认配置，可通过 --config 指定 JSON 文件覆盖
 default_config = {

@@ -1,5 +1,5 @@
-from sensors.serial_receiver import SerialReceiver
-from common.types import WheelData
+from src.sensors.serial_receiver import SerialReceiver
+from src.common.types import WheelData
 import time
 
 class WheelEncoder:

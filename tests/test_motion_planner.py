@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from planning.motion_planner import smooth_path, generate_velocity_profile
+from src.planning.motion_planner import smooth_path, generate_velocity_profile
 
 
 def test_smooth_path_shape_and_continuity():

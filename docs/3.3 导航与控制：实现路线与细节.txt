@@ -24,8 +24,8 @@
 
 ### 1.3 调用示例
 ```python
-from planning.path_planner import AStarPlanner
-from planning.motion_planner import smooth_path, generate_velocity_profile
+from src.planning.path_planner import AStarPlanner
+from src.planning.motion_planner import smooth_path, generate_velocity_profile
 
 planner = AStarPlanner(grid, grid_size)
 raw_path = planner.plan(start_point, goal_point)

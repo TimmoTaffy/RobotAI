@@ -1,7 +1,7 @@
 import time
 from typing import Dict, List
 from dataclasses import dataclass
-from common.types import RobotInfo, VisionRobot
+from src.common.types import RobotInfo, VisionRobot
 
 @dataclass
 class TrackedTarget:

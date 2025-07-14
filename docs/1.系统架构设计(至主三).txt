@@ -1,0 +1,109 @@
+RobotAI 系统架构设计
+
+## 系统概览
+
+本项目基于「分层模块化架构」，实现哨兵机器人多传感器融合与实时世界建模。核心层次如下：
+1. 传感层（Sensors） - 多源数据采集与标准化
+2. 感知层（Perception） - 定位、建图、跟踪
+3. 决策层（Planning） - 路径规划与运动规划
+4. 控制层（Control） - 轨迹跟踪与执行
+5. 集成层（Integration） - 系统协调与数据流管理
+
+---
+## 传感层设计
+
+### 数据标准化
+统一接口处理各传感器数据，输出标准数据类型：
+```plaintext
+sensors/
+├─ serial_receiver.py   # JSON接收与预处理（时间戳、numpy转换）
+├─ imu.py               # IMU → ImuData
+├─ wheel_encoder.py     # 轮速 → WheelData
+├─ lidar.py             # 点云 → LidarData
+├─ magnetometer.py      # 磁力计 → MagData
+├─ base_gyro.py         # 陀螺仪 → GyroData
+├─ radar_station.py     # 雷达站 → RadarStationData
+└─ vision.py            # 视觉识别 → VisionData
+```
+
+### 坐标变换
+高效批量转换多坐标系：
+transforms/
+├─ camera_to_vehicle.py # 相机→车体投影
+├─ lidar_to_vehicle.py  # 雷达→车体点云转换
+├─ turret_to_vehicle.py # 云台→车体Pose3D转换
+└─ vehicle_to_world.py  # 车体→世界Pose2D平面转换
+
+---
+## 感知层设计
+
+### A子线：自车定位
+localization/
+├─ dead_reckoning.py    # 轮速推算
+├─ imu_calibration.py   # IMU标定与补偿
+└─ ekf_fusion.py        # EKF融合(轮速+IMU+磁力计+陀螺仪)
+**输出**：`(x, y, θ, v)` + 云台姿态
+
+### B子线：环境建图
+mapping/
+├─ lidar_processor.py   # 点云滤地+聚类
+├─ occupancy_grid.py    # 占据栅格地图生成
+└─ map_builder.py       # 世界模型更新接口
+**输出**：`occupancy_grid` + `static_obstacles`
+
+### C子线：目标跟踪
+tracking/
+└─ target_tracker.py    # 雷达+视觉融合跟踪
+**输出**：`dynamic_obstacles` + `enemy_targets`
+
+---
+## 决策层设计
+
+### 路径与运动规划
+planning/
+├─ path_planner.py      # A*全局规划 (8单元测试)
+└─ motion_planner.py    # B样条轨迹平滑+速度配置 (6单元测试)
+*特点：实时 (<1s for 100×100地图), 曲率连续, 边界鲁棒
+
+---
+## 控制层设计
+
+### 双控制器实现
+control/
+├─ trajectory_tracker.py # Pure Pursuit (7单元测试)
+└─ mpc_controller.py     # MPC (7单元测试)
+*Pure Pursuit：O(1)算法，<0.0001s/次
+*MPC：预测优化，考虑速度/转角约束
+
+---
+## 集成层设计
+
+### 世界模型中枢
+class WorldModel:
+    robot_pose: Pose2D
+    occupancy_grid: OccupancyGrid
+    dynamic_obstacles: List[Obstacle]
+    enemy_targets: List[Target]
+    turret_state: TurretPose
+
+### 主循环流程
+def main_loop():
+    data = collect_sensors()
+    update_localization(data)
+    update_mapping(data)
+    update_tracking(data)
+    if mission:
+        path = plan_path()
+        traj = plan_motion(path)
+    cmd = track(traj)
+    send_control(cmd)
+
+---
+## 测试与质量保证
+32测试函数，覆盖率74%：
+tests/
+├─ test_path_planner.py
+├─ test_motion_planner.py
+├─ test_trajectory_tracker.py
+├─ test_mpc_controller.py
+└─ test_integration.python

@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from typing import List
 import numpy as np
-from common.types import Pose2D, TurretState, RobotInfo
+from src.common.types import Pose2D, TurretState, RobotInfo
 
 
 @dataclass

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Tuple
-from common.types import Pose2D
+from src.common.types import Pose2D
 
 def transform_vehicle_to_world(
     local_pose: Pose2D,

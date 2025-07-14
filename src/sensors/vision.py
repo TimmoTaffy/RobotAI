@@ -1,6 +1,6 @@
 import time
-from sensors.serial_receiver import SerialReceiver
-from common.types import VisionData, VisionRobot
+from src.sensors.serial_receiver import SerialReceiver
+from src.common.types import VisionData, VisionRobot
 
 class VisionSensor:
     """视觉传感器处理类

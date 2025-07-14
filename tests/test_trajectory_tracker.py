@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from common.types import Pose2D
-from control.trajectory_tracker import TrajectoryTracker
+from src.common.types import Pose2D
+from src.control.trajectory_tracker import TrajectoryTracker
 
 
 def make_straight_traj(length=10, step=1.0, speed=1.0):

@@ -1,6 +1,6 @@
 import numpy as np
-from sensors.serial_receiver import SerialReceiver
-from common.types import ImuData
+from src.sensors.serial_receiver import SerialReceiver
+from src.common.types import ImuData
 import time
 
 class IMU:

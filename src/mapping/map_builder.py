@@ -1,5 +1,5 @@
-from mapping.lidar_processor import LidarProcessor
-from mapping.occupancy_grid import generate_occupancy_grid
+from src.mapping.lidar_processor import LidarProcessor
+from src.mapping.occupancy_grid import generate_occupancy_grid
 from world_model import WorldModel
 
 def build_map(point_cloud, grid_size, map_size, world_model: WorldModel, map_conf: dict):

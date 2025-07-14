@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from sensors.serial_receiver import SerialReceiver
-from common.types import GyroData
+from src.sensors.serial_receiver import SerialReceiver
+from src.common.types import GyroData
 
 class BaseGyro:
     """底盘陀螺仪处理类

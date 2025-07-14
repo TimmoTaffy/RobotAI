@@ -3,7 +3,7 @@
 """
 from typing import Tuple
 import numpy as np
-from common.types import Pose2D
+from src.common.types import Pose2D
 
 class TrajectoryTracker:
     def __init__(self, lookahead_distance: float = 1.0, kp_speed: float = 1.0, desired_speed: float = 1.0):

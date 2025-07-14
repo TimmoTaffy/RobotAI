@@ -7,7 +7,7 @@ import time
 from queue import Queue
 from typing import Dict, Any
 import numpy as np
-from common.types import SensorData
+from src.common.types import SensorData
 
 class SerialReceiver:
     """串口数据接收器

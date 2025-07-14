@@ -1,7 +1,7 @@
 import numpy as np
 import time
-from sensors.serial_receiver import SerialReceiver
-from common.types import MagData
+from src.sensors.serial_receiver import SerialReceiver
+from src.common.types import MagData
 
 class Magnetometer:
     """磁力计传感器处理类
