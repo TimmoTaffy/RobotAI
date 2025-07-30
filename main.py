@@ -19,8 +19,8 @@ from src.sensors.vision import VisionSensor
 from src.common.types import Transform
 from src.transforms.lidar_to_vehicle import transform_lidar_to_vehicle
 from src.mapping.map_builder import build_map
-from src.tracking.target_tracker import TargetTracker
-from world_model import WorldModel
+from src.tracking import create_production_tracker
+from world_model import WorldModel, TacticalInfo
 from src.planning.path_planner import AStarPlanner
 from src.planning.motion_planner import smooth_path, generate_velocity_profile
 from src.control.trajectory_tracker import TrajectoryTracker as PurePursuitTracker
@@ -88,7 +88,7 @@ def main():
     lidar_sensor = LidarSensor(receiver)
     radar_sensor = RadarStation(receiver)
     vision_sensor = VisionSensor(receiver)
-    tracker = TargetTracker(cfg['tracker']['max_age'])
+    tracker = create_production_tracker(dt=0.1)
     # 规划与控制模块初始化
     planner = None  # 在获得地图后初始化
     pure_tracker = PurePursuitTracker(
@@ -114,9 +114,29 @@ def main():
         static_obstacles=[],
         dynamic_obstacles=[],
         occupancy_grid=None,
-        robots=[]
+        ground_slopes={},
+        tracked_targets=[],
+        tactical_info=TacticalInfo()
     )
 
+    # Host AI 模块及高阶状态机初始化
+    from src.host.modules.navigator import Navigator
+    from src.host.modules.vision_module import VisionModule
+    from src.host.modules.turret_controller import TurretController
+    from src.host.modules.weapon_controller import WeaponController
+    from src.host.modules.patrol_timer import PatrolTimer
+    from src.host.high_level_fsm import HighLevelStateMachine
+    # 实例化子模块
+    navigator = Navigator(None, cfg['map']['grid_size'], cfg['control']['desired_speed'])
+    vision_mod = VisionModule()
+    turret_ctrl = TurretController()
+    weapon_ctrl = WeaponController(ammo_count=cfg.get('initial_ammo', 10))
+    patrol_timer = PatrolTimer(interval=cfg.get('patrol_interval', 5.0))
+    # 创建状态机并绑定定时器回调
+    fsm = HighLevelStateMachine(navigator, vision_mod, turret_ctrl, weapon_ctrl, patrol_timer)
+    patrol_timer.callback = lambda: fsm.post_event('START_PATROL')
+    # 启动状态机初始巡逻
+    fsm.post_event('START_PATROL')
     period = 1.0 / cfg['loop_rate']
     while True:
         start_t = time.time()
@@ -136,6 +156,17 @@ def main():
             # wm.self_pose = self_pose
             # wm.turret_state = turret_state
 
+            # Host AI: 根据子模块状态触发高阶状态机事件
+            # TODO: 用实际数据判断条件
+            # 如果扫描中发现目标
+            fsm.post_event('TARGET_DETECTED')  # 示例触发，替换为实际检测条件
+            # 如果跟踪稳定后可进入瞄准
+            fsm.post_event('TARGET_STABLE')   # 示例触发，替换为实际稳定条件
+            # 如果瞄准完成可准备开火
+            fsm.post_event('READY_TO_FIRE')   # 示例触发，替换为实际就绪条件
+            # 如果弹药耗尽
+            if not weapon_ctrl.can_fire():
+                fsm.post_event('OUT_OF_AMMO')
             # 2. 坐标变换
             if cfg['transforms']['lidar_to_vehicle']:
                 raw_lidar = transform_lidar_to_vehicle(
@@ -154,7 +185,8 @@ def main():
 
             # 4. 目标跟踪 & 更新 WorldModel
             tracked = tracker.update(radar_data, vision_data)
-            wm.robots = tracked
+            wm.tracked_targets = tracked
+            wm.update_tactical_assessment()  # 更新战术评估
             # 5. 路径规划 & 运动规划
             # 初始化 planner 需在首次循环中执行
             if planner is None:

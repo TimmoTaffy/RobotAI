@@ -1,0 +1,296 @@
+4.2 控制系统：轨迹跟踪与运动控制
+
+控制系统是机器人的"驾驶员"，负责将导航系统生成的参考轨迹转换为实际的运动控制命令。
+系统采用双控制器架构，根据任务需求智能选择最适合的控制策略。
+
+=== 双控制器架构 ===
+
+设计理念：不同任务场景需要不同的控制特性
+- 巡逻场景：快速响应优先，对精度要求不高
+- 瞄准场景：高精度控制优先，可接受计算开销
+
+架构设计：
+- Pure Pursuit控制器：快速响应，适合实时控制
+- MPC控制器：高精度控制，适合精确操作
+
+智能切换逻辑：
+```
+任务模式          控制器选择      切换原因
+PATROL          Pure Pursuit    快速巡逻，减少计算负担
+TRACKING        Pure Pursuit    跟踪阶段，保持响应速度
+AIMING          MPC            精确瞄准，提高命中率
+FIRING          MPC            射击时保持高精度
+RETREAT         Pure Pursuit    快速撤离，实时性优先
+```
+
+=== Pure Pursuit控制器 ===
+
+算法分类：几何路径跟踪算法
+文件位置：control/trajectory_tracker.py
+核心思想：追踪轨迹上的前瞻点，通过几何关系计算转向角
+
+技术原理：
+1. 前瞻点搜索：在轨迹上寻找距离当前位置Ld的目标点
+2. 角度计算：计算目标点相对车体坐标系的角度α
+3. 转向控制：δ = atan(2*L*sin(α)/Ld)，其中L为轴距
+4. 速度控制：根据转向角自适应调速，大转角时减速
+
+几何原理详解：
+- 前瞻距离Ld：决定轨迹跟踪的平滑性
+- 航向角误差α：目标方向与当前方向的夹角
+- Ackermann转向模型：考虑车辆几何约束
+- 自适应速度：转向时自动减速，提高稳定性
+
+性能特点：
+- 计算复杂度：O(1)，极低延迟
+- 计算时间：约0.014ms
+- 跟踪精度：中等，位置误差约0.3m
+- 航向精度：较低，角度误差约11.5°
+- 控制平滑性：优秀，几乎无震荡
+
+适用场景：
+- 高速巡逻：快速响应，实时性要求高
+- 粗略跟踪：对精度要求不严格的移动
+- 资源受限：CPU计算能力有限时
+- 长距离导航：减少计算负担的远程导航
+
+输入参数：
+- current_pose：当前位姿 (Pose2D)
+- trajectory：轨迹点数组 (N×2或N×3，第三列为速度)
+
+输出结果：
+- v：线速度 (m/s)
+- steering_angle：转向角 (rad)
+
+调用示例：
+```python
+from src.control.trajectory_tracker import TrajectoryTracker
+
+tracker = TrajectoryTracker(
+    lookahead_distance=1.0,    # 前瞻距离
+    max_steering_angle=π/4,    # 最大转向角
+    max_speed=3.0              # 最大速度
+)
+
+v, steering = tracker.update(current_pose, trajectory)
+```
+
+参数调优：
+- lookahead_distance（前瞻距离）：
+  * 过小：轨迹震荡，急转弯
+  * 过大：切角严重，响应迟缓
+  * 推荐：0.5-2.0m，可根据速度动态调整
+- kp_speed（速度增益）：控制速度响应快慢
+- max_steering_angle：防止过度转向的安全限制
+
+=== MPC控制器 ===
+
+算法分类：最优控制算法
+文件位置：control/mpc_controller.py
+核心思想：在有限时域内求解最优化问题，考虑未来N步的预测和约束
+
+技术原理：
+1. 预测模型：使用车辆运动学模型预测未来状态
+   x_{k+1} = x_k + v*cos(θ)*dt
+   y_{k+1} = y_k + v*sin(θ)*dt  
+   θ_{k+1} = θ_k + ω*dt
+
+2. 代价函数：最小化跟踪误差和控制能量
+   J = Σ ||x_k - x_ref||²_Q + ||u_k||²_R + ||x_N - x_ref||²_Qf
+
+3. 约束处理：考虑速度和角速度物理限制
+   v_min ≤ v_k ≤ v_max
+   ω_min ≤ ω_k ≤ ω_max
+
+4. 在线求解：每个控制周期求解二次规划问题
+
+优化问题构建：
+- 状态变量：x_k = [x, y, θ] 位置和航向
+- 控制变量：u_k = [v, ω] 线速度和角速度
+- 预测步数：N = 8-15步，平衡精度与计算量
+- 权重矩阵：Q(状态)、R(控制)、Qf(终端)
+
+性能特点：
+- 计算时间：约1.364ms（含凸优化求解）
+- 跟踪精度：高，位置误差约0.315m
+- 航向精度：极高，角度误差约0.8°（提升93%）
+- 控制平滑性：优秀，平滑度指标0.008775
+
+适用场景：
+- 精确瞄准：需要高精度位置和航向控制
+- 复杂轨迹：S形机动、精确避障等复杂动作
+- 攻击模式：对敌攻击时的精确定位
+- 预测控制：需要考虑未来约束的场合
+
+输入参数：
+- current_pose：当前位姿 (Pose2D)
+- ref_trajectory：参考轨迹 (N+1×3，包含x,y,θ)
+
+输出结果：
+- v：线速度 (m/s)
+- omega：角速度 (rad/s)
+
+调用示例：
+```python
+from src.control.mpc_controller import MPCController
+
+mpc = MPCController(
+    horizon=10,                    # 预测步数
+    dt=0.1,                       # 时间步长
+    Q=diag([10, 10, 1]),          # 状态权重
+    R=diag([0.1, 0.1]),           # 控制权重
+    v_bounds=(0.0, 2.0),          # 速度约束
+    omega_bounds=(-1.0, 1.0)      # 角速度约束
+)
+
+v, omega = mpc.update(current_pose, ref_trajectory)
+```
+
+核心优化技术：
+1. 预编译优化：预先构建优化问题结构，运行时只更新参数
+2. 热启动机制：利用上次解作为初值，加速收敛
+3. 线性化处理：预计算三角函数，将非线性问题转化为QP
+4. OSQP求解器：专用凸二次规划求解器，高效稳定
+
+参数调优：
+- horizon（预测步数N）：
+  * 过小：预测不足，性能下降
+  * 过大：计算负担重，实时性差
+  * 推荐：8-15步，平衡精度与计算量
+- Q矩阵（状态权重）：
+  * diag([10, 10, 1])：x,y权重高，关注位置精度
+- R矩阵（控制权重）：
+  * diag([0.1, 0.1])：较小值，避免过度约束控制
+- Qf矩阵（终端权重）：通常设为2*Q，强调终端状态
+
+=== 异常处理与鲁棒性 ===
+
+MPC求解失败处理：
+1. 求解器状态监控：检测OPTIMAL/INFEASIBLE/UNBOUNDED状态
+2. Fallback控制器：简单几何控制，保证基本功能
+3. 失败计数统计：监控系统健康状态
+4. 热启动恢复：利用历史解加速恢复
+
+Fallback控制策略：
+```python
+def _fallback_control(self, current_pose, ref_trajectory):
+    # 简单点跟踪控制
+    target = ref_trajectory[1]  # 下一个目标点
+    dx = target[0] - current_pose.x
+    dy = target[1] - current_pose.y
+    
+    distance = sqrt(dx² + dy²)
+    target_angle = atan2(dy, dx)
+    angle_error = target_angle - current_pose.theta
+    
+    v = min(1.0, distance)  # 比例控制
+    omega = 2.0 * angle_error  # 角度控制
+    
+    return v, omega
+```
+
+Pure Pursuit鲁棒性：
+1. 轨迹有效性检查：处理空轨迹、单点轨迹
+2. 前瞻点搜索优化：从上次点开始搜索，提高效率
+3. 角度归一化：避免角度跳跃问题
+4. 安全限制：速度和转向角饱和保护
+
+=== 性能对比分析 ===
+
+                Pure Pursuit    MPC         优势分析
+计算时间        0.014ms        1.364ms     Pure Pursuit胜出97倍
+位置精度        0.300m         0.315m      Pure Pursuit略胜
+航向精度        11.5°          0.8°        MPC胜出14倍
+控制平滑性      0.000000       0.008775    Pure Pursuit胜出
+预测能力        无             N步预测     MPC独有
+约束处理        简单限制       显式约束    MPC更完善
+
+选择建议：
+- 高速巡逻：Pure Pursuit（快速响应优先）
+- 精确瞄准：MPC（精度优先）
+- 复杂环境：MPC（约束处理能力）
+- 资源受限：Pure Pursuit（计算效率优先）
+
+=== 实战应用流程 ===
+
+完整控制流程：
+```python
+# 1. 初始化双控制器
+pp_controller = TrajectoryTracker(lookahead_distance=1.0)
+mpc_controller = MPCController(horizon=10, dt=0.1)
+
+# 2. 主控制循环
+while robot.is_active():
+    # 获取当前状态
+    current_pose = robot.get_pose()
+    current_state = fsm.get_current_state()
+    
+    # 获取参考轨迹
+    trajectory = navigation.get_trajectory()
+    
+    # 根据状态选择控制器
+    if current_state in ['AIMING', 'FIRING']:
+        # 精确控制模式
+        v, omega = mpc_controller.update(current_pose, trajectory)
+    else:
+        # 快速响应模式
+        v, steering = pp_controller.update(current_pose, trajectory)
+        # 转换为角速度
+        omega = v * tan(steering) / wheelbase
+    
+    # 发送控制命令
+    robot.set_velocity(v, omega)
+```
+
+状态机集成：
+- 状态转换触发控制器切换
+- 控制器状态信息反馈给状态机
+- 异常情况下的降级处理
+
+=== 测试与验证 ===
+
+测试覆盖：
+- Pure Pursuit：7个测试函数
+  * 基本功能测试
+  * 边界情况处理
+  * 参数敏感性分析
+- MPC：7个测试函数
+  * 优化求解验证
+  * 约束处理测试
+  * 异常恢复测试
+
+性能基准测试：
+- 计算时间测量
+- 跟踪精度评估
+- 控制平滑性分析
+- 鲁棒性验证
+
+可视化工具：
+- visualize_control_comparison.py
+- 图形化对比两种控制器
+- 轨迹跟踪效果展示
+
+=== 未来优化方向 ===
+
+算法改进：
+1. 自适应参数：根据环境动态调整控制参数
+2. 学习增强：基于历史数据优化控制策略
+3. 多目标优化：同时考虑精度、效率、安全性
+4. 预测时域调整：根据任务复杂度动态调整N
+
+系统集成：
+1. 传感器融合：结合定位误差进行控制补偿
+2. 动力学建模：考虑机器人详细动力学特性
+3. 实时优化：在线参数调整和性能监控
+4. 协同控制：多机器人协作控制算法
+
+=== 总结 ===
+
+双控制器架构成功实现了性能与效率的平衡：
+- Pure Pursuit提供快速响应能力，满足实时性要求
+- MPC提供高精度控制能力，满足精确操作需求
+- 智能切换机制根据任务自动选择最优策略
+- 完善的异常处理保证系统鲁棒性
+
+该设计为哨兵机器人提供了从高速巡逻到精确射击的全方位控制能力，
+与导航系统配合构成了完整的运动控制解决方案。

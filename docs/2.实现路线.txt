@@ -2,16 +2,16 @@
 
 按优先级和依赖关系分成以下阶段：
 
-1. 数据结构标准化 [已完成]
+1. 数据结构标准化 [✔]
    • 在 common/types.py 定义核心数据类型：SensorData、Pose2D、Pose3D、Transform、ImuData、WheelData、LidarData、TurretState 等
    • 补充详细文档字符串和使用示例
 
-2. 坐标变换系统 [已完成]
+2. 坐标变换系统 [✔]
    • 完善坐标系定义和接口文档（docs/坐标转换系统说明.md）
    • 实现标准转换接口：transform_utils.py、camera_to_vehicle.py、lidar_to_vehicle.py、turret_to_vehicle.py、vehicle_to_world.py
    • 全部使用 Transform、Pose2D、Pose3D 类型，统一参数验证与异常处理
 
-3. 传感器接口标准化 [已完成]
+3. 传感器接口标准化 [✔]
    • serial_receiver.py 已支持时间戳、JSON预处理、numpy转换、阻塞/非阻塞接口
    • 所有传感器模块已输出标准数据类型：
      - imu.py → ImuData
@@ -26,7 +26,7 @@
    • 使用 Pose2D 类型：dead_reckoning.py、ekf_fusion.py 实现平面位姿估计
    • 使用 TurretState 类型：turret_pose.py 实现云台姿态解算
 
-5. 环境感知与目标跟踪 [已完成]
+5. 环境感知与目标跟踪 [✔]
    • LidarProcessor → 输入 LidarData，输出障碍物列表或占据栅格
    • RadarStation、Vision → 输出目标列表（RadarStationData、VisionData）
    • TargetTracker → 融合多源数据，维护目标状态与历史轨迹
@@ -35,7 +35,7 @@
    • 可视化模块（viz/draw_map.py）集成世界模型，实时绘制传感器数据和位姿
    • 日志与回放工具：记录并回放 WorldModel 消息，验证时序和数据一致性
 
-7. 测试与优化 [待开始]
+7. 测试与优化 [进行中]
    • 单元测试：数据类型、坐标变换、传感器接口、路径规划、控制模块
    • 性能优化：并发处理、缓存机制、内存与计算优化
    • 时间同步验证：校准传感器时延，确保数据时间对齐
@@ -48,13 +48,19 @@
    • trajectory_tracker.py → 纯追踪控制算法，支持输入带速度的轨迹 (N×3)
    • mpc_controller.py → MPC 控制器实现，使用带速度和航向角的参考轨迹 (N+1×3)
 
+10. 高层状态机 [进行中]
+   • src/host/high_level_fsm.py
+   • 管理机器人整体行为逻辑，协调导航、控制、感知等模块的交互。
+   • 状态定义 事件触发 状态间逻辑
+
 当前进度：
 ✔ 数据结构标准化
 ✔ 坐标变换系统
 ✔ 传感器接口标准化
 4. 自车状态估计 [进行中]
-5. 环境感知与目标跟踪 [已完成]
+✔. 环境感知与目标跟踪
 6. 可视化与调试 [待开始]
-7. 测试与优化 [待开始]
+7. 测试与优化 [进行中]
 ✔ 导航与规划 (含生成速度轨迹)
 ✔ 控制 (含 Pure Pursuit & MPC)
+10. 高层状态机 [进行中]

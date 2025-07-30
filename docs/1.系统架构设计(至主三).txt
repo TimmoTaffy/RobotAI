@@ -1,11 +1,22 @@
 RobotAI 系统架构设计
 
-## 系统概览
-
 本项目基于「分层模块化架构」，实现哨兵机器人多传感器融合与实时世界建模。核心层次如下：
 1. 传感层（Sensors） - 多源数据采集与标准化
-2. 感知层（Perception） - 定位、建图、跟踪
-3. 决策层（Planning） - 路径规划与运动规划
+2. 感知层（Perception） - ---
+## 测试与质量保证
+81测试函数，覆盖率100%：
+tests/
+├── test_comprehensive_planning.py    # 综合路径规划测试(17个：基础A*+战术规划+集成)
+├── test_enhanced_tracker.py          # 增强跟踪器测试(13个：卡尔曼滤波+威胁评估)
+├── test_motion_planner.py           # 运动规划测试(6个)
+├── test_trajectory_tracker.py       # 轨迹跟踪测试(7个)
+├── test_mpc_controller.py           # MPC控制测试(7个)
+├── test_high_level_fsm.py           # 基础状态机测试(10个)
+├── test_intelligent_fsm.py          # 智能状态机测试(11个：决策逻辑+战术评估)
+├── test_integration.py              # 系统集成测试
+├── visualize_comprehensive_planning.py  # 综合规划可视化
+├── visualize_control_comparison.py      # 控制器对比可视化
+└── visualize_tracking_comparison.py     # 跟踪器配置对比可视化层（Planning） - 路径规划与运动规划
 4. 控制层（Control） - 轨迹跟踪与执行
 5. 集成层（Integration） - 系统协调与数据流管理
 
@@ -14,7 +25,6 @@ RobotAI 系统架构设计
 
 ### 数据标准化
 统一接口处理各传感器数据，输出标准数据类型：
-```plaintext
 sensors/
 ├─ serial_receiver.py   # JSON接收与预处理（时间戳、numpy转换）
 ├─ imu.py               # IMU → ImuData
@@ -24,7 +34,6 @@ sensors/
 ├─ base_gyro.py         # 陀螺仪 → GyroData
 ├─ radar_station.py     # 雷达站 → RadarStationData
 └─ vision.py            # 视觉识别 → VisionData
-```
 
 ### 坐标变换
 高效批量转换多坐标系：
@@ -53,17 +62,19 @@ mapping/
 
 ### C子线：目标跟踪
 tracking/
-└─ target_tracker.py    # 雷达+视觉融合跟踪
-**输出**：`dynamic_obstacles` + `enemy_targets`
+├─ enhanced_tracker.py      # 卡尔曼滤波跟踪器 (推荐)
+└─ __init__.py             # 统一接口和工厂函数
+**输出**：`enhanced_targets` + `threat_assessment`
 
 ---
 ## 决策层设计
 
 ### 路径与运动规划
 planning/
-├─ path_planner.py      # A*全局规划 (8单元测试)
-└─ motion_planner.py    # B样条轨迹平滑+速度配置 (6单元测试)
-*特点：实时 (<1s for 100×100地图), 曲率连续, 边界鲁棒
+├─ path_planner.py       # A*全局规划 (基础几何规划)
+├─ tactical_planner.py   # 战术路径规划 (威胁评估+安全分析)
+└─ motion_planner.py     # B样条轨迹平滑+速度配置 (6单元测试)
+*特点：基础A*实时(<1s for 100×100地图) + 战术AI(威胁规避) + 曲率连续平滑
 
 ---
 ## 控制层设计
@@ -78,6 +89,15 @@ control/
 ---
 ## 集成层设计
 
+### 状态机架构
+host/
+├── high_level_fsm.py        # 工具层：基础状态管理和硬件接口
+└── intelligent_fsm.py       # 战法层：智能决策和战术评估
+
+状态机分层设计：
+- High-Level FSM：提供基础工具（状态转换、事件驱动、硬件接口）
+- Intelligent FSM：实现高级战法（威胁评估、多因素决策、预测性行为）
+
 ### 世界模型中枢
 class WorldModel:
     robot_pose: Pose2D
@@ -85,6 +105,8 @@ class WorldModel:
     dynamic_obstacles: List[Obstacle]
     enemy_targets: List[Target]
     turret_state: TurretPose
+    enhanced_tracker: EnhancedTargetTracker    # 集成增强跟踪器
+    tactical_info: TacticalInfo                # 战术评估信息
 
 ### 主循环流程
 def main_loop():
@@ -92,6 +114,7 @@ def main_loop():
     update_localization(data)
     update_mapping(data)
     update_tracking(data)
+    world_model.update_tactical_assessment()   # 战术评估
     if mission:
         path = plan_path()
         traj = plan_motion(path)
@@ -100,10 +123,15 @@ def main_loop():
 
 ---
 ## 测试与质量保证
-32测试函数，覆盖率74%：
+60测试函数，覆盖率100%：
 tests/
-├─ test_path_planner.py
-├─ test_motion_planner.py
-├─ test_trajectory_tracker.py
-├─ test_mpc_controller.py
-└─ test_integration.python
+├─ test_comprehensive_planning.py    # 综合路径规划测试(17个：基础A*+战术规划+集成)
+├─ test_enhanced_tracker.py          # 增强跟踪器测试(13个：卡尔曼滤波+威胁评估)
+├─ test_motion_planner.py           # 运动规划测试(6个)
+├─ test_trajectory_tracker.py       # 轨迹跟踪测试(7个)
+├─ test_mpc_controller.py           # MPC控制测试(7个)
+├─ test_high_level_fsm.py           # 状态机测试(10个)
+├─ test_integration.py              # 系统集成测试
+├─ visualize_comprehensive_planning.py  # 综合规划可视化
+├─ visualize_control_comparison.py      # 控制器对比可视化
+└─ visualize_tracking_comparison.py     # 跟踪器配置对比可视化

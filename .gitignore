@@ -62,8 +62,7 @@ env.bak/
 venv.bak/
 
 # Reports
-reports/*.html
-reports/*.json
+reports/
 
 # Logs
 *.log

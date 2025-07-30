@@ -1,6 +1,18 @@
 import pytest
 import numpy as np
 from src.planning.path_planner import AStarPlanner
+from src.planning.tactical_planner import TacticalPathPlanner
+from src.tracking.enhanced_tracker import KalmanTarget
+
+
+def create_test_kalman_target(id, team, x, y, confidence=1.0, threat_level=0.0):
+    """创建测试用的KalmanTarget"""
+    target = KalmanTarget(id=id, team=team)
+    target.state = np.array([x, y, 0.0, 0.0])  # [x, y, vx, vy]
+    target.confidence = confidence
+    target.threat_level = threat_level
+    target.last_update = 0.0
+    return target
 from src.control.mpc_controller import MPCController
 from src.control.trajectory_tracker import TrajectoryTracker
 from src.common.types import Pose2D
@@ -24,6 +36,19 @@ def mpc_controller():
 def trajectory_tracker():
     """Return a default TrajectoryTracker instance"""
     return TrajectoryTracker(lookahead_distance=1.0)
+
+@pytest.fixture
+def tactical_planner(grid):
+    """Return a TacticalPathPlanner using the grid fixture"""
+    return TacticalPathPlanner(grid, grid_size=1.0, weapon_range=6.0)
+
+@pytest.fixture
+def sample_targets():
+    """Return sample tracked targets for testing"""
+    return [
+        create_test_kalman_target(id=1, team='enemy', x=10.0, y=12.0, confidence=0.9, threat_level=0.8),
+        create_test_kalman_target(id=2, team='ally', x=5.0, y=15.0, confidence=1.0, threat_level=0.0)
+    ]
     
 # Pose2D fixture for default robot pose
 @pytest.fixture

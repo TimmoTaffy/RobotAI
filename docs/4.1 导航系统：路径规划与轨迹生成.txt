@@ -1,0 +1,224 @@
+4.1 导航系统：路径规划与轨迹生成
+
+导航系统是机器人的"大脑导航员"，负责从起点到终点的路径规划和轨迹优化。
+系统采用分层设计：全局路径规划 + 轨迹平滑 + 速度分配。
+
+=== 系统架构 ===
+
+导航流水线：
+起点终点 → A*路径规划 → B样条平滑 → 速度分配 → 执行轨迹
+
+模块组成：
+- path_planner.py：基础A*算法 + 战术路径规划
+- motion_planner.py：轨迹平滑与速度规划
+
+=== 路径规划模块 ===
+
+核心算法：A*搜索算法（八邻域）
+文件位置：planning/path_planner.py
+
+技术原理：
+1. 栅格化地图：将连续世界离散化为栅格
+2. 启发式搜索：f(n) = g(n) + h(n)
+3. 八邻域扩展：支持对角线移动，路径更自然
+4. 路径重构：从终点回溯到起点
+
+输入参数：
+- start：起点世界坐标 (x, y)
+- goal：终点世界坐标 (x, y)  
+- occupancy_grid：世界模型中的占据栅格
+- grid_size：栅格分辨率（米/栅格）
+
+输出结果：
+- 离散栅格路径点列表
+- 自动转换为世界坐标系
+
+战术路径规划扩展：
+- 威胁评估：考虑敌方目标威胁
+- 安全路径：避开高风险区域
+- 暴露时间最小化：减少在敌方视野内的时间
+
+性能特点：
+- 搜索效率：支持1000+节点的大规模搜索
+- 路径质量：最短路径保证
+- 实时性：<1秒完成100×100地图搜索
+
+调用示例：
+```python
+from src.planning.path_planner import AStarPlanner
+
+planner = AStarPlanner(occupancy_grid, grid_size=0.1)
+raw_path = planner.plan(start_point=[0, 0], goal_point=[10, 10])
+```
+
+=== 轨迹平滑模块 ===
+
+核心算法：三次B样条插值
+文件位置：planning/motion_planner.py
+
+技术原理：
+1. 控制点选择：从离散路径点选择关键控制点
+2. B样条构建：构建三次B样条曲线
+3. 参数化采样：均匀参数采样生成平滑轨迹
+4. 曲率连续性：确保轨迹二阶导数连续
+
+算法优势：
+- 平滑性：C²连续，无急转弯
+- 可控性：通过控制点调整轨迹形状
+- 效率：局部修改不影响整体轨迹
+
+输入参数：
+- raw_path：A*生成的离散路径点
+- num_points：输出轨迹点数量（默认100）
+
+输出结果：
+- 连续平滑轨迹 (N×2数组)
+- 均匀间隔的轨迹点
+
+调用示例：
+```python
+from src.planning.motion_planner import smooth_path
+
+smooth_trajectory = smooth_path(raw_path, num_points=100)
+```
+
+=== 速度分配模块 ===
+
+核心功能：为轨迹点分配合理的速度
+文件位置：planning/motion_planner.py
+
+技术原理：
+1. 曲率计算：基于轨迹几何计算局部曲率
+2. 速度限制：根据曲率限制最大安全速度
+3. 加速度约束：考虑机器人动力学限制
+4. 平滑过渡：确保速度连续变化
+
+速度分配策略：
+- 直线段：保持期望速度
+- 弯道：根据曲率自动减速
+- 起点终点：渐进加速和减速
+
+输入参数：
+- smooth_trajectory：平滑轨迹 (N×2数组)
+- desired_speed：期望巡航速度 (m/s)
+
+输出结果：
+- 带速度的轨迹 (N×3数组，每行[x, y, v])
+
+调用示例：
+```python
+from src.planning.motion_planner import generate_velocity_profile
+
+motion_trajectory = generate_velocity_profile(smooth_trajectory, desired_speed=2.0)
+```
+
+=== 完整导航流程 ===
+
+典型调用流程：
+```python
+from src.planning.path_planner import AStarPlanner
+from src.planning.motion_planner import smooth_path, generate_velocity_profile
+
+# 1. 全局路径规划
+planner = AStarPlanner(occupancy_grid, grid_size=0.1)
+raw_path = planner.plan(start_point, goal_point)
+
+# 2. 轨迹平滑
+smooth_traj = smooth_path(raw_path, num_points=100)
+
+# 3. 速度分配
+motion_traj = generate_velocity_profile(smooth_traj, desired_speed=2.0)
+
+# 4. 输出供控制器使用
+# motion_traj: N×3数组，[x, y, v]格式
+```
+
+=== 性能优化 ===
+
+路径规划优化：
+- 双向搜索：从起点和终点同时搜索
+- 分层规划：粗糙规划 + 精细规划
+- 缓存机制：重用计算结果
+
+轨迹平滑优化：
+- 自适应采样：弯道密集，直线稀疏
+- 并行计算：多线程处理大规模轨迹
+- 内存优化：流式处理减少内存占用
+
+=== 参数调优指南 ===
+
+grid_size（栅格大小）：
+- 过小：计算量大，精度高
+- 过大：计算快，可能错过窄通道
+- 推荐：0.1-0.5m，根据环境复杂度调整
+
+num_points（轨迹点数）：
+- 过少：轨迹粗糙，控制精度低
+- 过多：计算负担重，存储占用大
+- 推荐：50-200点，根据轨迹长度调整
+
+desired_speed（期望速度）：
+- 考虑机器人动力学限制
+- 平衡任务效率与安全性
+- 根据任务模式动态调整
+
+=== 应用场景 ===
+
+基础路径规划：
+- 点到点导航
+- 巡逻路径生成
+- 避障路径规划
+
+战术路径规划：
+- 考虑敌方威胁的安全路径
+- 多目标优化路径
+- 动态重规划
+
+复杂轨迹生成：
+- S形机动轨迹
+- 精确避障轨迹
+- 跟踪拦截轨迹
+
+=== 测试与验证 ===
+
+测试覆盖：
+- 路径规划：17个测试函数
+- 基础A*：路径正确性、边界处理
+- 战术规划：威胁评估、安全路径
+- 集成测试：完整导航流程
+
+性能基准：
+- 规划时间：<1秒（100×100地图）
+- 路径质量：最优性验证
+- 内存使用：资源占用监控
+
+可视化工具：
+- visualize_comprehensive_planning.py
+- 图形化展示规划结果
+- 路径质量分析工具
+
+=== 与控制系统接口 ===
+
+输出格式标准化：
+- Pure Pursuit输入：N×2或N×3轨迹数组
+- MPC输入：N×3轨迹数组（包含期望速度）
+
+坐标系统一：
+- 统一使用世界坐标系
+- 与定位模块坐标系对齐
+- 单位标准化（米、弧度）
+
+实时性保证：
+- 流水线处理：规划与执行并行
+- 增量更新：局部路径重规划
+- 缓存机制：避免重复计算
+
+=== 总结 ===
+
+导航系统为机器人提供了从粗糙路径到精细轨迹的完整解决方案：
+- A*算法保证路径的最优性和完备性
+- B样条平滑确保轨迹的连续性和可执行性
+- 速度分配优化运动效率和安全性
+- 战术扩展增强实战适应能力
+
+该系统为控制层提供了高质量的参考轨迹，是实现复杂机动的基础。

@@ -1,0 +1,154 @@
+FSM架构设计说明
+
+设计理念：采用分层架构，High-Level FSM负责"基本工具"，Intelligent FSM负责"高级战法"
+
+
+=== High-Level FSM (工具层) ===
+
+职责：基础状态管理和硬件接口封装
+
+特点：
+- 简单可靠的状态转换逻辑
+- 事件驱动机制 (post_event)
+- 标准化硬件接口抽象
+- 基础的回调函数 (on_enter/on_exit)
+
+状态列表：
+- IDLE: 待机状态
+- PATROL: 巡逻模式
+- TRACKING: 目标跟踪
+- AIMING: 瞄准状态
+- FIRING: 射击状态
+- RETREAT: 撤退状态
+- FAILSAFE: 故障保护
+
+状态转换示例：
+IDLE + START_PATROL → PATROL
+PATROL + TARGET_DETECTED → TRACKING
+TRACKING + TARGET_STABLE → AIMING
+AIMING + READY_TO_FIRE → FIRING
+
+代码特征：
+简单的转换表：
+self._transitions = {
+    ('IDLE', 'START_PATROL'): 'PATROL',
+    ('PATROL', 'TARGET_DETECTED'): 'TRACKING',
+    ...
+}
+
+基础工具接口：
+def on_enter_patrol(self):
+    if self.navigator: self.navigator.start_patrol()
+    if self.vision: self.vision.enable_scanning()
+
+
+=== Intelligent FSM (战法层) ===
+
+职责：智能决策和战术评估
+
+特点：
+- 继承High-Level FSM，扩展智能能力
+- 集成世界模型进行态势感知
+- 多因素决策算法
+- 预测性行为和自适应策略
+
+智能特性：
+- 威胁等级评估 (低/中/高威胁阈值)
+- 系统状态监控 (弹药/血量/热量)
+- 调用Enhanced Tracker进行目标运动预测 (已重构)
+- 战术稳定性分析
+- 自动状态转换
+
+决策逻辑示例：
+高威胁 + 低弹药 + 低血量 → 战术撤退
+高威胁 + 目标稳定 + 充足弹药 → 精确射击
+低威胁 + 系统空闲 → 继续巡逻
+
+代码特征：
+智能决策逻辑：
+def intelligent_decision(self, tactical_info):
+    threat_level = tactical_info.threat_level
+    
+    # 多因素威胁评估
+    if (threat_level > 0.8 and 
+        self.ammo_level < 0.1 and 
+        self.health_level < 0.3):
+        return 'RETREAT'
+        
+    # 调用Enhanced Tracker进行专业预测 (重构后)
+    predicted_pos = self.world_model.enhanced_tracker.predict_target_position(
+        target_id, future_time
+    )
+    
+瞄准状态回调：
+def on_enter_AIMING(self, event):
+    # 使用Enhanced Tracker的卡尔曼滤波预测
+    predicted_position = self.world_model.enhanced_tracker.predict_target_position(
+        target_id=event.target_id,
+        future_time=0.5  # 预测0.5秒后位置
+    )
+
+=== 架构对比 ===
+
+                  High-Level FSM      Intelligent FSM
+复杂度            简单条件判断        多因素分析算法 + 跟踪器集成
+触发方式          事件驱动           智能评估驱动
+预测能力          无                 调用Enhanced Tracker (卡尔曼滤波)
+可测试性          单元测试状态转换    集成测试战术效果
+可维护性          稳定的工具基础      灵活的战法策略
+扩展性            提供标准接口        战术算法可插拔
+
+=== 使用场景 ===
+
+单独使用工具层：
+- 基础功能验证
+- 硬件接口测试
+- 简单任务执行
+
+叠加战法层：
+- 复杂战术场景
+- 自主决策需求
+- 多威胁环境应对
+
+=== 文件结构 ===
+
+src/host/
+├── high_level_fsm.py      # 工具层：基础状态机
+└── intelligent_fsm.py     # 战法层：智能决策
+
+=== 测试覆盖 ===
+
+- High-Level FSM: 10个基础测试 (状态转换、回调执行)
+- Intelligent FSM: 11个智能测试 (决策逻辑、战术评估、跟踪器集成)
+- 总计21个FSM相关测试，全部通过
+- 预测功能测试使用Mock验证，确保调用Enhanced Tracker
+
+=== 当前实现状态 ===
+
+架构特点：
+- 战法层通过world_model.enhanced_tracker调用预测功能
+- 感知层(Enhanced Tracker)提供卡尔曼滤波预测算法
+- 决策层(Intelligent FSM)专注于战术决策逻辑
+- 每个功能在合适的层次只实现一次
+
+实际调用关系：
+决策层 (Intelligent FSM):
+├── intelligent_decision()      调用跟踪器预测
+└── on_enter_AIMING()          使用专业预测
+
+感知层 (Enhanced Tracker):
+├── predict_target_position()   唯一预测实现 (卡尔曼滤波)
+└── update_tracking()
+
+测试验证：
+- 智能FSM测试: 11/11 通过
+- 全量测试: 81/81 通过
+- 预测功能测试使用Mock验证，确保正确调用Enhanced Tracker
+
+=== 设计原则 ===
+
+1. 分离关注点：工具与战法职责清晰
+2. 向上兼容：可以单独使用任一层
+3. 接口标准：模块间依赖注入，便于测试
+4. 可扩展性：新战法可以轻松添加到智能层
+5. 单点实现：每个功能只在适当的层次实现一次
