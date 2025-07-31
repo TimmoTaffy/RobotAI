@@ -41,6 +41,8 @@ class WorldModel:
     tracked_targets: List[KalmanTarget]
     # 战术信息评估
     tactical_info: TacticalInfo
+    # 地形通行代价图：与occupancy_grid同尺寸，用于路径规划代价计算
+    terrain_cost_map: Optional[np.ndarray] = None
     # 系统健康状态
     system_health: Dict[str, bool] = None
     # 增强型跟踪器引用（用于预测功能）
